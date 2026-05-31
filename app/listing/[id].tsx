@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,16 +12,54 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { doc, getDoc } from "firebase/firestore";
-import { db, auth } from "../../../services/firebase";
+import { db, auth } from "../../services/firebase";
 import ImageViewing from "react-native-image-viewing";
 
+// Internal Imports
+import { useTheme } from "../theme";
+import { VerificationOverlay } from "../components/VerificationOverlay";
+import { SaveButton } from "../components/SaveButton";
+
 export default function ListingDetail() {
+  const theme = useTheme();
   const { id } = useLocalSearchParams();
   const router = useRouter();
+
+  // Listing Data States
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [imageVisible, setImageVisible] = useState(false);
 
+  // Verification Status States
+  const [userStatus, setUserStatus] = useState<string | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [showBlocker, setShowBlocker] = useState(false);
+
+  // 1. Fetch User Verification Status on Mount
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      setStatusLoading(true);
+      try {
+        const userDoc = await getDoc(doc(db, "users", uid));
+        if (userDoc.exists()) {
+          // Defaults to 'unverified' if status field is missing
+          setUserStatus(userDoc.data().status || "unverified");
+        } else {
+          setUserStatus("unverified");
+        }
+      } catch (err) {
+        console.error("Error fetching user status:", err);
+      } finally {
+        setStatusLoading(false);
+      }
+    };
+    fetchUserStatus();
+  }, []);
+
+  // 2. Fetch Listing Details
   useEffect(() => {
     let mounted = true;
 
@@ -36,6 +74,7 @@ export default function ListingDetail() {
 
         const docRef = doc(db, "listings", listingId as string);
         const docSnap = await getDoc(docRef);
+
         if (!mounted) return;
 
         if (docSnap.exists()) {
@@ -45,7 +84,7 @@ export default function ListingDetail() {
         }
       } catch (error) {
         console.error("Failed to fetch listing:", error);
-        if (mounted) Alert.alert("Error", "Failed to load listing.");
+        if (mounted) Alert.alert("Error", "Failed to load listing details.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -58,44 +97,62 @@ export default function ListingDetail() {
   }, [id]);
 
   const isOwner = listing?.sellerUID === auth.currentUser?.uid;
+  const isLoggedIn = !!auth.currentUser;
 
+  // 3. Handle Messaging (with verification check)
   const handleMessageSeller = () => {
-    if (!auth.currentUser) {
-      Alert.alert('Sign in required', 'Please sign in to message the seller.');
+    if (!isLoggedIn) {
+      Alert.alert("Sign in required", "Please sign in to message the seller.");
+      return;
+    }
+
+    // Wait for verification status to load if user just opened the app
+    if (statusLoading) return;
+
+    // BLOCKER LOGIC
+    if (userStatus !== "verified") {
+      setShowBlocker(true);
       return;
     }
 
     if (isOwner) {
-      Alert.alert('This is your listing', 'You cannot message yourself.');
-      return;
-    }
-
-    if (!listing?.id) {
-      Alert.alert('Unable to message', 'Listing data is not available yet.');
+      Alert.alert("This is your listing", "You cannot message yourself.");
       return;
     }
 
     const qs = new URLSearchParams({
       listingId: listing.id,
-      listingTitle: listing.title ?? '',
-      listingImage: listing.imageURL ?? '',
-      listingPrice: listing.price != null ? String(listing.price) : '',
-      sellerUid: listing.sellerUID ?? '',
-      sellerName: listing.sellerName ?? 'Seller',
-      otherUid: listing.sellerUID ?? '',
-      otherName: listing.sellerName ?? 'Seller',
+      listingTitle: listing.title ?? "",
+      listingImage: listing.imageURL ?? "",
+      listingPrice: listing.price != null ? String(listing.price) : "",
+      sellerUid: listing.sellerUID ?? "",
+      sellerName: listing.sellerName ?? "Seller",
+      otherUid: listing.sellerUID ?? "",
+      otherName: listing.sellerName ?? "Seller",
     }).toString();
 
-    router.push((`/chat?${qs}`) as any);
+    router.push(`/chat?${qs}` as any);
   };
 
   const handleEditListing = () => {
-    if (!listing?.id) {
-      Alert.alert("Unable to edit", "Listing data is not available yet.");
+    if (!listing?.id) return;
+    router.push(`/sell?id=${listing.id}`);
+  };
+
+  const handleLeaveReview = () => {
+    if (!isLoggedIn) {
+      Alert.alert("Sign in required", "Please sign in to leave a review.");
       return;
     }
-
-    router.push(`/sell?id=${listing.id}`);
+    router.push({
+      pathname: "/listing/leave-review",
+      params: {
+        listingId: listing.id,
+        listingTitle: listing.title ?? "",
+        sellerId: listing.sellerUID,
+        sellerName: listing.sellerName ?? "Seller",
+      },
+    } as any);
   };
 
   if (loading) {
@@ -116,8 +173,18 @@ export default function ListingDetail() {
 
   return (
     <View style={styles.container}>
+      {/* Verification Blocker Overlay */}
+      {showBlocker && (
+        <VerificationOverlay
+          status={userStatus}
+          theme={theme}
+          router={router}
+          onClose={() => setShowBlocker(false)}
+        />
+      )}
+
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Image */}
+        {/* Main Image */}
         <View style={styles.imageBox}>
           <TouchableOpacity
             activeOpacity={0.9}
@@ -125,11 +192,7 @@ export default function ListingDetail() {
             style={{ flex: 1 }}
           >
             {listing.imageURL ? (
-              <Image
-                source={{ uri: listing.imageURL }}
-                style={styles.image}
-                onError={() => console.warn("Image failed to load")}
-              />
+              <Image source={{ uri: listing.imageURL }} style={styles.image} />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <Ionicons name="image-outline" size={52} color="#cbd5e1" />
@@ -137,9 +200,19 @@ export default function ListingDetail() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Ionicons name="arrow-back" size={22} color="#1f2937" />
           </TouchableOpacity>
+
+          {!isOwner && (
+            <SaveButton
+              listingId={Array.isArray(id) ? id[0] : id}
+              style={styles.detailSaveButton}
+            />
+          )}
 
           {listing.imageURL && (
             <View style={styles.expandHint}>
@@ -167,13 +240,14 @@ export default function ListingDetail() {
             </View>
           </View>
 
-          {listing.description ? (
+          {listing.description && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Description</Text>
               <Text style={styles.description}>{listing.description}</Text>
             </View>
-          ) : null}
+          )}
 
+          {/* Seller Card */}
           <View style={styles.sellerCard}>
             <View style={styles.sellerAvatar}>
               {listing.sellerPhoto ? (
@@ -191,15 +265,26 @@ export default function ListingDetail() {
                 {listing.sellerName ?? "Unknown"}
               </Text>
             </View>
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="shield-checkmark" size={14} color="#0f766e" />
-                <Text style={styles.verifiedText}>Verified</Text>
-              </View>
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="shield-checkmark" size={14} color="#0f766e" />
+              <Text style={styles.verifiedText}>Verified</Text>
+            </View>
           </View>
+
+          {/* Review Action */}
+          {!isOwner && isLoggedIn && (
+            <TouchableOpacity
+              style={styles.reviewButton}
+              onPress={handleLeaveReview}
+            >
+              <Ionicons name="star-outline" size={18} color="#0f766e" />
+              <Text style={styles.reviewButtonText}>Leave a Review</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
-      {/* Fullscreen Image Viewer */}
+      {/* Fullscreen Viewer */}
       {listing.imageURL && (
         <ImageViewing
           images={[{ uri: listing.imageURL }]}
@@ -209,12 +294,12 @@ export default function ListingDetail() {
         />
       )}
 
+      {/* Footer Actions */}
       <View style={styles.bottomBar}>
         {isOwner ? (
           <TouchableOpacity
             style={styles.messageButton}
             onPress={handleEditListing}
-            activeOpacity={0.85}
           >
             <Ionicons name="pencil" size={20} color="#fff" />
             <Text style={styles.messageButtonText}>Edit Listing</Text>
@@ -223,7 +308,6 @@ export default function ListingDetail() {
           <TouchableOpacity
             style={styles.messageButton}
             onPress={handleMessageSeller}
-            activeOpacity={0.85}
           >
             <Ionicons name="chatbubble-ellipses" size={20} color="#fff" />
             <Text style={styles.messageButtonText}>Message Seller</Text>
@@ -251,9 +335,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 3,
   },
   expandHint: {
@@ -280,15 +361,10 @@ const styles = StyleSheet.create({
   sellerCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
+    backgroundColor: "#fff",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(15,118,110,0.12)",
-    shadowColor: "#0f766e",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
     padding: 14,
     gap: 12,
   },
@@ -307,6 +383,18 @@ const styles = StyleSheet.create({
   sellerName: { fontSize: 15, fontWeight: "700", color: "#111827" },
   verifiedBadge: { flexDirection: "row", alignItems: "center", gap: 4 },
   verifiedText: { fontSize: 12, color: "#0f766e", fontWeight: "700" },
+  reviewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: "#0f766e",
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: "#f0fdf9",
+  },
+  reviewButtonText: { fontSize: 15, fontWeight: "700", color: "#0f766e" },
   bottomBar: {
     padding: 16,
     borderTopWidth: 1,
@@ -323,4 +411,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   messageButtonText: { color: "#fff", fontSize: 16, fontWeight: "800" },
+  detailSaveButton: {
+  position: "absolute",
+  top: 48,
+  right: 16,
+},
 });

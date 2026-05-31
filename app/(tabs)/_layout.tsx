@@ -1,9 +1,11 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme";
+import { useUnreadMessages } from "../hooks/useUnreadMessages";
 
 export default function TabLayout() {
   const theme = useTheme();
+  const unreadMessages = useUnreadMessages();
 
   return (
     <Tabs
@@ -45,6 +47,12 @@ export default function TabLayout() {
         name="messages"
         options={{
           title: "Messages",
+          tabBarBadge:
+            unreadMessages > 0
+              ? unreadMessages > 99
+                ? "99+"
+                : unreadMessages
+              : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubbles" size={size} color={color} />
           ),
@@ -59,7 +67,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="listing" options={{ href: null }} />
     </Tabs>
   );
 }

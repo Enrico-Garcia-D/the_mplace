@@ -101,7 +101,7 @@ export default function MyListings() {
             <TouchableOpacity
               style={styles.card}
               activeOpacity={0.85}
-              onPress={() => router.push(`/listing/${item.id}`)}
+              onPress={() => router.navigate(`/listing/${item.id}` as any)}
             >
               <View style={styles.cardImage}>
                 {item.imageURL ? (

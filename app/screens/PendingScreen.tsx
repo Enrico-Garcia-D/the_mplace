@@ -1,18 +1,18 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router'; // Added
 import { signOut } from '../../services/auth';
 import { useTheme } from '../theme';
 
 export default function PendingScreen() {
   const theme = useTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
+  const router = useRouter(); // Added
 
   const handleSignOut = async () => {
     try {
-      console.log('Pending screen sign-out pressed');
       await signOut();
-      console.log('Pending screen sign-out: signOut() returned');
     } catch (error) {
       console.error('Sign out failed:', error);
     }
@@ -21,26 +21,42 @@ export default function PendingScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
-        <Ionicons name="hourglass" size={42} color="#0f766e" />
+        <Ionicons name="hourglass" size={42} color={theme.primary} />
       </View>
+      
       <Text style={styles.title}>Verification pending</Text>
       <Text style={styles.message}>
-        Your ID is being reviewed by our team. This usually takes 24-48 hours, and you will get
-        marketplace access once approved.
+        Your ID is being reviewed. This usually takes 24-48 hours. 
+        You can browse the marketplace in the meantime, but selling features will be limited.
       </Text>
+
       <View style={styles.statusPanel}>
         <View style={styles.statusRow}>
-          <Ionicons name="checkmark-circle" size={18} color="#0f766e" />
+          <Ionicons name="checkmark-circle" size={18} color={theme.primary} />
           <Text style={styles.statusText}>ID submitted securely</Text>
         </View>
         <View style={styles.statusRow}>
-          <Ionicons name="time" size={18} color="#0f766e" />
+          <Ionicons name="time" size={18} color={theme.primary} />
           <Text style={styles.statusText}>Manual review in progress</Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.82}>
-        <Text style={styles.signOutText}>Sign out</Text>
-      </TouchableOpacity>
+
+      <View style={styles.buttonGroup}>
+        {/* Primary Action */}
+        <TouchableOpacity 
+          style={styles.continueButton} 
+          onPress={() => router.replace('/(tabs)')} 
+          activeOpacity={0.82}
+        >
+          <Text style={styles.continueText}>Continue to The MarketPlace</Text>
+          <Ionicons name="arrow-forward" size={18} color="#fff" />
+        </TouchableOpacity>
+
+        {/* Secondary Action */}
+        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.82}>
+          <Text style={styles.signOutText}>Sign out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -96,14 +112,33 @@ const getStyles = (theme) =>
       fontSize: 14,
       fontWeight: '700',
     },
+    buttonGroup: {
+      width: '100%',
+      gap: 12,
+      marginTop: 20,
+    },
+    continueButton: {
+      height: 56,
+      backgroundColor: theme.primary,
+      borderRadius: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+    },
+    continueText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '800',
+    },
     signOutButton: {
-      marginTop: 10,
-      paddingVertical: 13,
-      paddingHorizontal: 34,
+      height: 50,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: theme.border,
       backgroundColor: theme.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     signOutText: {
       color: theme.text,

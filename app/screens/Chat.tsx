@@ -1,24 +1,4 @@
 // app/screens/chat.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Real-time chat screen — Expo Router version
-//
-// Navigate here with:
-//   router.push({
-//     pathname: '/screens/chat',
-//     params: {
-//       conversationId: '...',   // optional — omit when buyer opens fresh chat
-//       listingId: listing.id,
-//       listingTitle: listing.title,
-//       listingImage: listing.image ?? '',
-//       listingPrice: String(listing.price ?? ''),
-//       sellerUid: listing.sellerUid,
-//       sellerName: listing.sellerName,
-//       otherUid: '<their uid>',
-//       otherName: '<their display name>',
-//     },
-//   });
-// ─────────────────────────────────────────────────────────────────────────────
-
 import React, {
   useState,
   useEffect,
@@ -42,8 +22,8 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Timestamp } from "firebase/firestore";
-import { auth } from "../../services/firebase";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
+import { auth, db } from "../../services/firebase";
 import {
   getOrCreateConversation,
   sendMessage,
@@ -95,12 +75,15 @@ function formatDateLabel(ts: Timestamp | null | undefined): string {
   });
 }
 
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
   const router = useRouter();
 
-  // Expo Router passes all params as strings
   const {
     conversationId: initialConvoId,
     listingId,
@@ -124,7 +107,21 @@ export default function ChatScreen() {
   }>();
 
   const currentUser = auth.currentUser!;
-  const participants = [currentUser.uid, otherUid];
+  const listingIdValue = firstParam(listingId) ?? "";
+  const listingTitleValue = firstParam(listingTitle) ?? "";
+  const listingImageValue = firstParam(listingImage) ?? "";
+  const listingPriceValue = firstParam(listingPrice) ?? "";
+  const otherUidValue = firstParam(otherUid) ?? "";
+  const otherNameValue = firstParam(otherName) ?? "User";
+  const sellerUidParam = firstParam(sellerUid) ?? "";
+  const sellerNameParam = firstParam(sellerName) ?? "";
+  const [resolvedSellerUid, setResolvedSellerUid] = useState(sellerUidParam);
+  const [resolvedSellerName, setResolvedSellerName] = useState(sellerNameParam);
+
+  const participants = [currentUser.uid, otherUidValue].filter(Boolean);
+
+  // true = current user is the buyer
+  const isBuyer = Boolean(resolvedSellerUid) && currentUser.uid !== resolvedSellerUid;
 
   const [conversationId, setConversationId] = useState<string | null>(
     initialConvoId ?? null,
@@ -136,6 +133,23 @@ export default function ChatScreen() {
 
   const flatListRef = useRef<FlatList<ListItem>>(null);
 
+  useEffect(() => {
+    if (resolvedSellerUid || !listingIdValue) return;
+
+    const resolveSeller = async () => {
+      try {
+        const listingSnap = await getDoc(doc(db, "listings", listingIdValue));
+        const listingData = listingSnap.data();
+        setResolvedSellerUid(listingData?.sellerUID ?? "");
+        setResolvedSellerName(listingData?.sellerName ?? "Seller");
+      } catch (err) {
+        console.warn("Could not resolve listing seller for review:", err);
+      }
+    };
+
+    resolveSeller();
+  }, [listingIdValue, resolvedSellerUid]);
+
   // ── Init conversation + subscribe ──────────────────────────────────────────
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -145,13 +159,13 @@ export default function ChatScreen() {
         let convoId = conversationId;
 
         if (!convoId) {
-          convoId = await getOrCreateConversation(currentUser.uid, otherUid, {
-            id: listingId,
-            title: listingTitle,
-            image: listingImage || null,
-            price: listingPrice || null,
-            sellerUid,
-            sellerName,
+          convoId = await getOrCreateConversation(currentUser.uid, otherUidValue, {
+            id: listingIdValue,
+            title: listingTitleValue,
+            image: listingImageValue || null,
+            price: listingPriceValue || null,
+            sellerUid: resolvedSellerUid,
+            sellerName: resolvedSellerName,
             buyerName: currentUser.displayName ?? "Buyer",
           });
           setConversationId(convoId);
@@ -205,6 +219,29 @@ export default function ChatScreen() {
       setSending(false);
     }
   }, [inputText, sending, conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Leave review ───────────────────────────────────────────────────────────
+  const handleLeaveReview = useCallback(() => {
+    if (!resolvedSellerUid) {
+      return;
+    }
+
+    router.push({
+      pathname: "/listing/leave-review",
+      params: {
+        listingId: listingIdValue,
+        listingTitle: listingTitleValue,
+        sellerId: resolvedSellerUid,
+        sellerName: resolvedSellerName || "Seller",
+      },
+    } as any);
+  }, [
+    listingIdValue,
+    listingTitleValue,
+    resolvedSellerUid,
+    resolvedSellerName,
+    router,
+  ]);
 
   // ── Inject date separators ─────────────────────────────────────────────────
   const listItems = useMemo<ListItem[]>(() => {
@@ -294,14 +331,26 @@ export default function ChatScreen() {
           </View>
           <View>
             <Text style={styles.headerName} numberOfLines={1}>
-              {otherName}
+              {otherNameValue}
             </Text>
             <Text style={styles.headerSub} numberOfLines={1}>
-              {listingTitle}
+              {listingTitleValue}
             </Text>
           </View>
         </View>
-        <View style={{ width: 32 }} />
+
+        {/* Leave a Review button — only for buyers */}
+        {isBuyer && (
+          <TouchableOpacity
+            style={styles.reviewBtn}
+            onPress={handleLeaveReview}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="star" size={14} color="#0f766e" />
+            <Text style={styles.reviewBtnText}>Review</Text>
+          </TouchableOpacity>
+        )}
+        {!isBuyer && <View style={{ width: 32 }} />}
       </View>
 
       {/* Listing card */}
@@ -309,14 +358,14 @@ export default function ChatScreen() {
         style={styles.listingCard}
         activeOpacity={0.85}
         onPress={() =>
-          router.push({
+          router.navigate({
             pathname: "/listing/[id]",
-            params: { id: listingId },
+            params: { id: listingIdValue },
           })
         }
       >
-        {listingImage ? (
-          <Image source={{ uri: listingImage }} style={styles.listingImg} />
+        {listingImageValue ? (
+          <Image source={{ uri: listingImageValue }} style={styles.listingImg} />
         ) : (
           <View style={styles.listingImgPlaceholder}>
             <Ionicons name="image-outline" size={20} color="#94a3b8" />
@@ -324,11 +373,11 @@ export default function ChatScreen() {
         )}
         <View style={styles.listingInfo}>
           <Text style={styles.listingTitle} numberOfLines={1}>
-            {listingTitle}
+            {listingTitleValue}
           </Text>
-          {listingPrice ? (
+          {listingPriceValue ? (
             <Text style={styles.listingPrice}>
-              ₱{Number(listingPrice).toLocaleString()}
+              ₱{Number(listingPriceValue).toLocaleString()}
             </Text>
           ) : null}
         </View>
@@ -346,13 +395,16 @@ export default function ChatScreen() {
             <ActivityIndicator size="large" color="#0f766e" />
           </View>
         ) : (
-            <FlatList<ListItem>
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
+          <FlatList<ListItem>
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             ref={flatListRef}
             data={listItems}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={[styles.msgList, { flexGrow: 1, paddingBottom: 12 }]}
+            contentContainerStyle={[
+              styles.msgList,
+              { flexGrow: 1, paddingBottom: 12 },
+            ]}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: false })
@@ -445,6 +497,22 @@ const styles = StyleSheet.create({
     color: "#0f766e",
     fontWeight: "600",
     maxWidth: 170,
+  },
+  reviewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#f0fdf9",
+    borderWidth: 1,
+    borderColor: "#0f766e",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  reviewBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0f766e",
   },
   listingCard: {
     flexDirection: "row",

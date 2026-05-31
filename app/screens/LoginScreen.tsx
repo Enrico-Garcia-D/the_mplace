@@ -33,7 +33,7 @@ export default function LoginScreen() {
         <View style={styles.logoMark}>
           <Ionicons name="storefront" size={34} color="#0f766e" />
         </View>
-        <Text style={styles.appName}>M-Place</Text>
+        <Text style={styles.appName}>The MarketPlace</Text>
         <Text style={styles.tagline}>Buy and sell safely with verified people nearby.</Text>
       </View>
 

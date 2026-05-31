@@ -21,14 +21,30 @@ import {
   where,
   getCountFromServer,
 } from "firebase/firestore";
+import {
+  getReviewSummary,
+  SellerReview,
+  subscribeToSellerReviews,
+} from "../hooks/useReviews";
+import { useSavedItems } from "../hooks/useSavedItems";
+import { useAuthUid } from "../hooks/useAuthUid";
 
 export default function ProfileTab() {
   const theme = useTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
   const router = useRouter();
+  const uid = useAuthUid();
   const [user, setUser] = useState<any>(null);
   const [totalListings, setTotalListings] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<SellerReview[]>([]);
+  const { savedIds } = useSavedItems();
+
+  useEffect(() => {
+    if (!uid) return;
+
+    return subscribeToSellerReviews(uid, setReviews);
+  }, [uid]);
 
   useEffect(() => {
     let mounted = true;
@@ -36,7 +52,6 @@ export default function ProfileTab() {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const uid = auth.currentUser?.uid;
         if (!uid) {
           if (mounted) setLoading(false);
           return;
@@ -63,23 +78,26 @@ export default function ProfileTab() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [uid]);
 
   const handleSignOut = async () => {
-  try {
-    console.log('Profile sign-out button pressed');
-    await signOut();
-    console.log('Profile sign-out: signOut() returned');
-  } catch (error) {
-    console.error('Sign out failed:', error);
-  }
-};
+    try {
+      console.log("Profile sign-out button pressed");
+      await signOut();
+      console.log("Profile sign-out: signOut() returned");
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
+  };
 
   const getJoinedAt = (isoDate: string) => {
     if (!isoDate) return "—";
     const date = new Date(isoDate);
     return date.toLocaleString("default", { month: "long", year: "numeric" });
   };
+
+  const reviewSummary = getReviewSummary(reviews);
+  const avgRating = reviewSummary.averageLabel;
 
   if (loading) {
     return (
@@ -91,10 +109,19 @@ export default function ProfileTab() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
       </View>
+
+      {/* Verification Banner - Shows only when pending */}
+      {user?.status === "pending" && (
+        <View style={styles.pendingBanner}>
+          <Ionicons name="information-circle" size={20} color="#92400e" />
+          <Text style={styles.pendingBannerText}>
+            Your ID is currently being reviewed by our team.
+          </Text>
+        </View>
+      )}
 
       {/* User Card */}
       <View style={styles.userCard}>
@@ -112,10 +139,34 @@ export default function ProfileTab() {
           <Text style={styles.userEmail}>
             {user?.email ?? auth.currentUser?.email ?? "—"}
           </Text>
-          <View style={styles.verifiedBadge}>
-            <Ionicons name="shield-checkmark" size={13} color={theme.primary} />
-            <Text style={styles.verifiedText}>Verified member</Text>
-          </View>
+
+          {/* Average Rating (if exists) */}
+          {avgRating && (
+            <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={13} color="#F59E0B" />
+              <Text style={styles.ratingText}>
+                {avgRating} · {reviewSummary.reviewCount}{" "}
+                {reviewSummary.reviewCount === 1 ? "review" : "reviews"}
+              </Text>
+            </View>
+          )}
+
+          {/* ONLY ONE STATUS BADGE HERE */}
+          {user?.status === "pending" ? (
+            <View style={styles.pendingBadge}>
+              <Ionicons name="hourglass-outline" size={12} color="#92400e" />
+              <Text style={styles.pendingBadgeText}>Verification Pending</Text>
+            </View>
+          ) : user?.status === "verified" ? (
+            <View style={styles.verifiedBadge}>
+              <Ionicons
+                name="shield-checkmark"
+                size={13}
+                color={theme.primary}
+              />
+              <Text style={styles.verifiedText}>Verified member</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -132,10 +183,61 @@ export default function ProfileTab() {
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{avgRating ?? "—"}</Text>
+          <Text style={styles.statLabel}>Avg Rating</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
           <Text style={styles.statNumber}>{getJoinedAt(user?.createdAt)}</Text>
           <Text style={styles.statLabel}>Joined</Text>
         </View>
       </View>
+
+      {/* Reviews Preview */}
+      {reviews.length > 0 && (
+        <View style={styles.reviewsCard}>
+          <View style={styles.reviewsHeader}>
+            <Ionicons name="star" size={16} color="#F59E0B" />
+            <Text style={styles.reviewsTitle}>Recent Reviews</Text>
+          </View>
+          {reviews.slice(0, 3).map((review) => (
+            <View key={review.id} style={styles.reviewItem}>
+              <View style={styles.reviewTop}>
+                <Text style={styles.reviewerName}>{review.buyerName}</Text>
+                <View style={styles.reviewStars}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Ionicons
+                      key={star}
+                      name="star"
+                      size={12}
+                      color={star <= review.rating ? "#F59E0B" : "#E5E7EB"}
+                    />
+                  ))}
+                </View>
+              </View>
+              {review.comment ? (
+                <Text style={styles.reviewComment}>{review.comment}</Text>
+              ) : null}
+            </View>
+          ))}
+          {reviews.length > 3 && (
+            <TouchableOpacity
+              style={styles.seeAllButton}
+              activeOpacity={0.7}
+              onPress={() => router.push("/reviews" as any)}
+            >
+              <Text style={styles.seeAllText}>
+                See all {reviews.length} reviews
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={theme.primary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Menu */}
       <View style={styles.menu}>
@@ -148,14 +250,45 @@ export default function ProfileTab() {
           <Text style={styles.menuLabel}>My Listings</Text>
           <Ionicons name="chevron-forward" size={18} color={theme.secondary} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          activeOpacity={0.8}
+          onPress={() => router.push("/saved-listings")}
+        >
           <Ionicons name="heart" size={20} color={theme.primary} />
           <Text style={styles.menuLabel}>Saved Items</Text>
+          {savedIds.length > 0 && (
+            <View
+              style={{
+                backgroundColor: theme.primarySoft,
+                paddingHorizontal: 8,
+                borderRadius: 10,
+                marginRight: 5,
+              }}
+            >
+              <Text
+                style={{
+                  color: theme.primary,
+                  fontWeight: "700",
+                  fontSize: 12,
+                }}
+              >
+                {savedIds.length}
+              </Text>
+            </View>
+          )}
           <Ionicons name="chevron-forward" size={18} color={theme.secondary} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          activeOpacity={0.8}
+          onPress={() => router.push("/reviews" as any)}
+        >
           <Ionicons name="star" size={20} color={theme.primary} />
           <Text style={styles.menuLabel}>Reviews</Text>
+          <Text style={styles.reviewsBadge}>
+            {reviews.length > 0 ? reviews.length : ""}
+          </Text>
           <Ionicons name="chevron-forward" size={18} color={theme.secondary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} activeOpacity={0.8}>
@@ -178,16 +311,20 @@ export default function ProfileTab() {
   );
 }
 
-const getStyles = (theme) =>
+const getStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
-    header: { paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16 },
+    loadingContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    header: { paddingHorizontal: 10, paddingTop: 56, paddingBottom: 16 },
     headerTitle: { fontSize: 26, fontWeight: "800", color: theme.text },
     userCard: {
       flexDirection: "row",
       alignItems: "center",
-      marginHorizontal: 20,
+      marginHorizontal: 10,
       backgroundColor: theme.surface,
       borderRadius: 16,
       padding: 16,
@@ -214,16 +351,28 @@ const getStyles = (theme) =>
     userInfo: { flex: 1, gap: 4 },
     userName: { fontSize: 18, fontWeight: "800", color: theme.text },
     userEmail: { fontSize: 13, color: theme.subtext },
-    verifiedBadge: {
+    ratingBadge: {
       flexDirection: "row",
       alignItems: "center",
       gap: 4,
       marginTop: 2,
     },
+    ratingText: { fontSize: 12, color: "#F59E0B", fontWeight: "700" },
+    verifiedBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start", // Important to not stretch
+      gap: 4,
+      marginTop: 2,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 4,
+      backgroundColor: theme.primarySoft,
+    },
     verifiedText: { fontSize: 12, color: theme.primary, fontWeight: "700" },
     statsRow: {
       flexDirection: "row",
-      marginHorizontal: 20,
+      marginHorizontal: 10,
       backgroundColor: theme.surface,
       borderRadius: 12,
       borderWidth: 1,
@@ -232,11 +381,49 @@ const getStyles = (theme) =>
       marginBottom: 12,
     },
     statItem: { flex: 1, alignItems: "center", gap: 4 },
-    statNumber: { fontSize: 18, fontWeight: "800", color: theme.text },
+    statNumber: { fontSize: 16, fontWeight: "800", color: theme.text },
     statLabel: { fontSize: 12, color: theme.subtext, fontWeight: "600" },
     statDivider: { width: 1, backgroundColor: theme.border },
+    reviewsCard: {
+      marginHorizontal: 10,
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 16,
+      marginBottom: 12,
+      gap: 12,
+    },
+    reviewsHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    reviewsTitle: { fontSize: 15, fontWeight: "800", color: theme.text },
+    reviewItem: {
+      gap: 4,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    reviewTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    reviewerName: { fontSize: 13, fontWeight: "700", color: theme.text },
+    reviewStars: { flexDirection: "row", gap: 2 },
+    reviewComment: { fontSize: 13, color: theme.subtext, lineHeight: 18 },
+    seeAllButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      paddingTop: 4,
+    },
+    seeAllText: { fontSize: 13, fontWeight: "700", color: theme.primary },
     menu: {
-      marginHorizontal: 20,
+      marginHorizontal: 10,
       backgroundColor: theme.surface,
       borderRadius: 12,
       borderWidth: 1,
@@ -254,11 +441,12 @@ const getStyles = (theme) =>
       gap: 12,
     },
     menuLabel: { flex: 1, fontSize: 15, fontWeight: "600", color: theme.text },
+    reviewsBadge: { fontSize: 13, color: theme.subtext, fontWeight: "600" },
     signOutButton: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      marginHorizontal: 20,
+      marginHorizontal: 10,
       marginBottom: 32,
       padding: 16,
       borderRadius: 12,
@@ -268,4 +456,38 @@ const getStyles = (theme) =>
       gap: 8,
     },
     signOutText: { fontSize: 15, fontWeight: "700", color: theme.danger },
+    pendingBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#fef3c7",
+      marginHorizontal: 10,
+      padding: 12,
+      borderRadius: 12,
+      gap: 10,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: "#f59e0b",
+    },
+    pendingBannerText: {
+      flex: 1,
+      fontSize: 13,
+      color: "#92400e",
+      fontWeight: "600",
+    },
+    pendingBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 4,
+      backgroundColor: "#fef3c7",
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    pendingBadgeText: {
+      fontSize: 11,
+      color: "#92400e",
+      fontWeight: "700",
+      textTransform: "uppercase",
+    },
   });
