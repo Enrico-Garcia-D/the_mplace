@@ -22,6 +22,7 @@ import { SaveButton } from "../components/SaveButton";
 
 export default function ListingDetail() {
   const theme = useTheme();
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
@@ -158,7 +159,7 @@ export default function ListingDetail() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0f766e" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -195,7 +196,7 @@ export default function ListingDetail() {
               <Image source={{ uri: listing.imageURL }} style={styles.image} />
             ) : (
               <View style={styles.imagePlaceholder}>
-                <Ionicons name="image-outline" size={52} color="#cbd5e1" />
+                <Ionicons name="image-outline" size={52} color={theme.muted} />
               </View>
             )}
           </TouchableOpacity>
@@ -204,7 +205,7 @@ export default function ListingDetail() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={22} color="#1f2937" />
+            <Ionicons name="arrow-back" size={22} color={theme.text} />
           </TouchableOpacity>
 
           {!isOwner && (
@@ -231,11 +232,11 @@ export default function ListingDetail() {
 
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
-              <Ionicons name="location-outline" size={14} color="#64748b" />
+              <Ionicons name="location-outline" size={14} color={theme.subtext} />
               <Text style={styles.metaText}>{listing.location}</Text>
             </View>
             <View style={styles.metaItem}>
-              <Ionicons name="pricetag-outline" size={14} color="#64748b" />
+              <Ionicons name="pricetag-outline" size={14} color={theme.subtext} />
               <Text style={styles.metaText}>{listing.category}</Text>
             </View>
           </View>
@@ -256,7 +257,7 @@ export default function ListingDetail() {
                   style={styles.sellerAvatarImage}
                 />
               ) : (
-                <Ionicons name="person" size={22} color="#0f766e" />
+                <Ionicons name="person" size={22} color={theme.primary} />
               )}
             </View>
             <View style={styles.sellerInfo}>
@@ -266,7 +267,7 @@ export default function ListingDetail() {
               </Text>
             </View>
             <View style={styles.verifiedBadge}>
-              <Ionicons name="shield-checkmark" size={14} color="#0f766e" />
+              <Ionicons name="shield-checkmark" size={14} color={theme.primary} />
               <Text style={styles.verifiedText}>Verified</Text>
             </View>
           </View>
@@ -277,7 +278,7 @@ export default function ListingDetail() {
               style={styles.reviewButton}
               onPress={handleLeaveReview}
             >
-              <Ionicons name="star-outline" size={18} color="#0f766e" />
+              <Ionicons name="star-outline" size={18} color={theme.primary} />
               <Text style={styles.reviewButtonText}>Leave a Review</Text>
             </TouchableOpacity>
           )}
@@ -318,13 +319,13 @@ export default function ListingDetail() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc" },
-  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
-  notFound: { fontSize: 16, color: "#64748b" },
-  imageBox: { width: "100%", height: 300, backgroundColor: "#f1f5f9" },
+const getStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: theme.background },
+  notFound: { fontSize: 16, color: theme.subtext },
+  imageBox: { width: "100%", height: 300, backgroundColor: theme.card },
   image: { width: "100%", height: "100%", resizeMode: "cover" },
-  imagePlaceholder: { flex: 1, alignItems: "center", justifyContent: "center" },
+  imagePlaceholder: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: theme.card },
   backButton: {
     position: "absolute",
     top: 48,
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#fff",
+    backgroundColor: theme.surface,
     alignItems: "center",
     justifyContent: "center",
     elevation: 3,
@@ -348,23 +349,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  content: { padding: 20, gap: 16 },
+  content: { padding: 20, gap: 16, backgroundColor: theme.background },
   titleRow: { gap: 6 },
-  title: { fontSize: 22, fontWeight: "800", color: "#111827", lineHeight: 28 },
-  price: { fontSize: 24, fontWeight: "800", color: "#0f766e" },
+  title: { fontSize: 22, fontWeight: "800", color: theme.text, lineHeight: 28 },
+  price: { fontSize: 24, fontWeight: "800", color: theme.primary },
   metaRow: { flexDirection: "row", gap: 16 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  metaText: { fontSize: 13, color: "#64748b" },
+  metaText: { fontSize: 13, color: theme.subtext },
   section: { gap: 8 },
-  sectionTitle: { fontSize: 15, fontWeight: "800", color: "#111827" },
-  description: { fontSize: 14, color: "#475569", lineHeight: 22 },
+  sectionTitle: { fontSize: 15, fontWeight: "800", color: theme.text },
+  description: { fontSize: 14, color: theme.subtext, lineHeight: 22 },
   sellerCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: theme.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(15,118,110,0.12)",
+    borderColor: theme.border,
     padding: 14,
     gap: 12,
   },
@@ -372,48 +373,48 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#ccfbf1",
+    backgroundColor: theme.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
   sellerAvatarImage: { width: 48, height: 48, borderRadius: 24 },
   sellerInfo: { flex: 1, gap: 2 },
-  sellerLabel: { fontSize: 11, color: "#94a3b8", fontWeight: "600" },
-  sellerName: { fontSize: 15, fontWeight: "700", color: "#111827" },
+  sellerLabel: { fontSize: 11, color: theme.subtext, fontWeight: "600" },
+  sellerName: { fontSize: 15, fontWeight: "700", color: theme.text },
   verifiedBadge: { flexDirection: "row", alignItems: "center", gap: 4 },
-  verifiedText: { fontSize: 12, color: "#0f766e", fontWeight: "700" },
+  verifiedText: { fontSize: 12, color: theme.primary, fontWeight: "700" },
   reviewButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     borderWidth: 1.5,
-    borderColor: "#0f766e",
+    borderColor: theme.primary,
     borderRadius: 12,
     padding: 14,
-    backgroundColor: "#f0fdf9",
+    backgroundColor: theme.primarySoft,
   },
-  reviewButtonText: { fontSize: 15, fontWeight: "700", color: "#0f766e" },
+  reviewButtonText: { fontSize: 15, fontWeight: "700", color: theme.primary },
   bottomBar: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-    backgroundColor: "#fff",
+    borderTopColor: theme.border,
+    backgroundColor: theme.background,
   },
   messageButton: {
     minHeight: 54,
     borderRadius: 8,
-    backgroundColor: "#0f766e",
+    backgroundColor: theme.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
-  messageButtonText: { color: "#fff", fontSize: 16, fontWeight: "800" },
+  messageButtonText: { color: theme.primaryText, fontSize: 16, fontWeight: "800" },
   detailSaveButton: {
-  position: "absolute",
-  top: 48,
-  right: 16,
-},
+    position: "absolute",
+    top: 48,
+    right: 16,
+  },
 });

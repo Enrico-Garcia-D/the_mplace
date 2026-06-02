@@ -31,7 +31,7 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.logoMark}>
-          <Ionicons name="storefront" size={34} color="#0f766e" />
+          <Ionicons name="storefront" size={34} color={theme.primary} />
         </View>
         <Text style={styles.appName}>The MarketPlace</Text>
         <Text style={styles.tagline}>Buy and sell safely with verified people nearby.</Text>
@@ -39,18 +39,18 @@ export default function LoginScreen() {
 
       <View style={styles.securePanel}>
         <View style={styles.secureHeader}>
-          <Ionicons name="shield-checkmark" size={22} color="#0f766e" />
+          <Ionicons name="shield-checkmark" size={22} color={theme.primary} />
           <Text style={styles.secureText}>ID-verified community</Text>
         </View>
         <Text style={styles.secureSubText}>
           Every account submits a valid government ID before joining the local marketplace.
         </Text>
         <View style={styles.checkRow}>
-          <Ionicons name="checkmark-circle" size={17} color="#0f766e" />
+          <Ionicons name="checkmark-circle" size={17} color={theme.primary} />
           <Text style={styles.checkText}>Helps reduce fake buyers and sellers</Text>
         </View>
         <View style={styles.checkRow}>
-          <Ionicons name="checkmark-circle" size={17} color="#0f766e" />
+          <Ionicons name="checkmark-circle" size={17} color={theme.primary} />
           <Text style={styles.checkText}>Review usually completes in 24-48 hours</Text>
         </View>
       </View>

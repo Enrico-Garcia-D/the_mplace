@@ -31,7 +31,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
-        <Ionicons name="checkmark-circle" size={46} color="#0f766e" />
+        <Ionicons name="checkmark-circle" size={46} color={theme.primary} />
       </View>
       <Text style={styles.title}>Welcome to The MarketPlace</Text>
       <Text style={styles.subtitle}>

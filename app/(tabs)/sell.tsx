@@ -61,10 +61,12 @@ const EMPTY_FORM: FormState = {
 // ── Verification Overlay ──────────────────────────────────────────────────────
 function VerificationOverlay({ status, theme, router }: { status: string, theme: any, router: any }) {
   const isPending = status === 'pending';
+  const isDark = theme.background === '#020617';
+  const overlayBg = isDark ? 'rgba(2,6,23,0.85)' : 'rgba(255,255,255,0.85)';
   
   return (
     <View style={[StyleSheet.absoluteFill, { 
-      backgroundColor: 'rgba(255,255,255,0.85)', 
+      backgroundColor: overlayBg, 
       justifyContent: 'center', 
       alignItems: 'center',
       zIndex: 999,
@@ -117,7 +119,7 @@ function VerificationOverlay({ status, theme, router }: { status: string, theme:
           }}
           onPress={() => isPending ? router.push('/profile') : router.push('/id-upload')}
         >
-          <Text style={{ color: '#fff', fontWeight: '800' }}>
+          <Text style={{ color: theme.primaryText, fontWeight: '800' }}>
             {isPending ? "Check Status in Profile" : "Verify My ID"}
           </Text>
         </TouchableOpacity>
@@ -127,7 +129,7 @@ function VerificationOverlay({ status, theme, router }: { status: string, theme:
 }
 
 // ── Success Screen ────────────────────────────────────────────────────────────
-function SuccessScreen({ onDone }: { onDone: () => void }) {
+function SuccessScreen({ onDone, theme }: { onDone: () => void, theme: any }) {
   const scaleAnim = React.useRef(new Animated.Value(0)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -138,10 +140,19 @@ function SuccessScreen({ onDone }: { onDone: () => void }) {
     ]).start();
   }, []);
 
+  const successStyles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.primarySoft, alignItems: "center", justifyContent: "center", gap: 24, padding: 32 },
+    iconWrap: { marginBottom: 8 },
+    title: { fontSize: 32, fontWeight: "900", color: theme.primary },
+    subtitle: { fontSize: 16, color: theme.subtext, textAlign: "center", lineHeight: 24 },
+    button: { marginTop: 16, backgroundColor: theme.primary, borderRadius: 14, paddingHorizontal: 40, paddingVertical: 16 },
+    buttonText: { color: theme.primaryText, fontWeight: "800", fontSize: 16 },
+  });
+
   return (
     <View style={successStyles.container}>
       <Animated.View style={[successStyles.iconWrap, { transform: [{ scale: scaleAnim }] }]}>
-        <Ionicons name="checkmark-circle" size={80} color="#0f766e" />
+        <Ionicons name="checkmark-circle" size={80} color={theme.primary} />
       </Animated.View>
       <Animated.View style={{ opacity: fadeAnim, alignItems: "center", gap: 8 }}>
         <Text style={successStyles.title}>Listed!</Text>
@@ -153,15 +164,6 @@ function SuccessScreen({ onDone }: { onDone: () => void }) {
     </View>
   );
 }
-
-const successStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f0fdf9", alignItems: "center", justifyContent: "center", gap: 24, padding: 32 },
-  iconWrap: { marginBottom: 8 },
-  title: { fontSize: 32, fontWeight: "900", color: "#0f766e" },
-  subtitle: { fontSize: 16, color: "#475569", textAlign: "center", lineHeight: 24 },
-  button: { marginTop: 16, backgroundColor: "#0f766e", borderRadius: 14, paddingHorizontal: 40, paddingVertical: 16 },
-  buttonText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-});
 
 // ── Preview Modal ─────────────────────────────────────────────────────────────
 function PreviewModal({
@@ -191,17 +193,17 @@ function PreviewModal({
               <Image source={{ uri: form.image }} style={{ width: "100%", height: "100%", resizeMode: "cover" }} />
             ) : (
               <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="image-outline" size={52} color="#cbd5e1" />
+                <Ionicons name="image-outline" size={52} color={theme.muted} />
               </View>
             )}
             <TouchableOpacity
               onPress={onClose}
-              style={{ position: "absolute", top: 48, left: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", elevation: 3 }}
+              style={{ position: "absolute", top: 48, left: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: theme.surface, alignItems: "center", justifyContent: "center", elevation: 3 }}
             >
-              <Ionicons name="arrow-back" size={22} color="#1f2937" />
+              <Ionicons name="arrow-back" size={22} color={theme.text} />
             </TouchableOpacity>
             <View style={{ position: "absolute", top: 48, right: 16, backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>PREVIEW</Text>
+              <Text style={{ color: theme.primaryText, fontSize: 12, fontWeight: "700" }}>PREVIEW</Text>
             </View>
           </View>
 
@@ -210,12 +212,12 @@ function PreviewModal({
             <View style={{ gap: 4 }}>
               <Text style={{ fontSize: 22, fontWeight: "800", color: theme.text }}>{form.title || "Untitled"}</Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={{ fontSize: 24, fontWeight: "800", color: "#0f766e" }}>
+                <Text style={{ fontSize: 24, fontWeight: "800", color: theme.primary }}>
                   ₱{form.price ? Number(form.price).toLocaleString() : "0"}
                 </Text>
                 {form.negotiable && (
-                  <View style={{ backgroundColor: "#fef3c7", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#d97706" }}>NEGOTIABLE</Text>
+                  <View style={{ backgroundColor: theme.background === '#020617' ? '#292414' : "#fef3c7", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: theme.background === '#020617' ? '#fbbf24' : "#d97706" }}>NEGOTIABLE</Text>
                   </View>
                 )}
               </View>
@@ -225,14 +227,14 @@ function PreviewModal({
             <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
               {form.location ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="location-outline" size={14} color="#64748b" />
-                  <Text style={{ fontSize: 13, color: "#64748b" }}>{form.location}</Text>
+                  <Ionicons name="location-outline" size={14} color={theme.subtext} />
+                  <Text style={{ fontSize: 13, color: theme.subtext }}>{form.location}</Text>
                 </View>
               ) : null}
               {form.category ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="pricetag-outline" size={14} color="#64748b" />
-                  <Text style={{ fontSize: 13, color: "#64748b" }}>{form.category}</Text>
+                  <Ionicons name="pricetag-outline" size={14} color={theme.subtext} />
+                  <Text style={{ fontSize: 13, color: theme.subtext }}>{form.category}</Text>
                 </View>
               ) : null}
               {condition ? (
@@ -247,22 +249,22 @@ function PreviewModal({
             {form.description ? (
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 15, fontWeight: "800", color: theme.text }}>Description</Text>
-                <Text style={{ fontSize: 14, color: "#475569", lineHeight: 22 }}>{form.description}</Text>
+                <Text style={{ fontSize: 14, color: theme.subtext, lineHeight: 22 }}>{form.description}</Text>
               </View>
             ) : null}
 
             {/* Seller */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: theme.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "rgba(15,118,110,0.12)" }}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#ccfbf1", alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name="person" size={20} color="#0f766e" />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: theme.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: theme.border }}>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.primarySoft, alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="person" size={20} color={theme.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 11, color: "#94a3b8", fontWeight: "600" }}>Seller</Text>
+                <Text style={{ fontSize: 11, color: theme.subtext, fontWeight: "600" }}>Seller</Text>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: theme.text }}>{auth.currentUser?.displayName ?? "You"}</Text>
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Ionicons name="shield-checkmark" size={14} color="#0f766e" />
-                <Text style={{ fontSize: 12, color: "#0f766e", fontWeight: "700" }}>Verified</Text>
+                <Ionicons name="shield-checkmark" size={14} color={theme.primary} />
+                <Text style={{ fontSize: 12, color: theme.primary, fontWeight: "700" }}>Verified</Text>
               </View>
             </View>
           </View>
@@ -271,17 +273,17 @@ function PreviewModal({
         {/* Post button */}
         <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: theme.background }}>
           <TouchableOpacity
-            style={{ minHeight: 54, borderRadius: 12, backgroundColor: "#0f766e", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: submitting ? 0.7 : 1 }}
+            style={{ minHeight: 54, borderRadius: 12, backgroundColor: theme.primary, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: submitting ? 0.7 : 1 }}
             onPress={onConfirm}
             disabled={submitting}
             activeOpacity={0.85}
           >
             {submitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.primaryText} />
             ) : (
               <>
-                <Ionicons name="cloud-upload" size={20} color="#fff" />
-                <Text style={{ color: "#fff", fontSize: 16, fontWeight: "800" }}>Confirm & Post</Text>
+                <Ionicons name="cloud-upload" size={20} color={theme.primaryText} />
+                <Text style={{ color: theme.primaryText, fontSize: 16, fontWeight: "800" }}>Confirm & Post</Text>
               </>
             )}
           </TouchableOpacity>
@@ -496,7 +498,7 @@ export default function SellTab() {
     router.replace("/home");
   };
 
-  if (showSuccess) return <SuccessScreen onDone={handleSuccessDone} />;
+  if (showSuccess) return <SuccessScreen onDone={handleSuccessDone} theme={theme} />;
 
   return (
     <View style={{ flex: 1 }}>
@@ -532,7 +534,7 @@ export default function SellTab() {
           ) : (
             <TouchableOpacity style={styles.photoPlaceholder} onPress={pickImage} activeOpacity={0.8}>
               <View style={styles.photoIconWrap}>
-                <Ionicons name="camera" size={28} color="#0f766e" />
+                <Ionicons name="camera" size={28} color={theme.primary} />
               </View>
               <Text style={styles.photoPlaceholderText}>Add a photo</Text>
               <Text style={styles.photoPlaceholderSub}>Tap to upload from gallery</Text>
@@ -693,7 +695,7 @@ export default function SellTab() {
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.previewButton} onPress={handlePreview} activeOpacity={0.85}>
-              <Ionicons name="eye-outline" size={18} color="#fff" />
+              <Ionicons name="eye-outline" size={18} color={theme.primaryText} />
               <Text style={styles.previewButtonText}>Preview & Post</Text>
             </TouchableOpacity>
           </View>
@@ -749,11 +751,11 @@ function getStyles(theme: ReturnType<typeof useTheme>) {
       width: 60,
       height: 60,
       borderRadius: 30,
-      backgroundColor: "#f0fdf9",
+      backgroundColor: theme.primarySoft,
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1.5,
-      borderColor: "#0f766e",
+      borderColor: theme.primary,
       borderStyle: "dashed",
     },
     photoPlaceholderText: { fontSize: 15, fontWeight: "700", color: theme.text },
@@ -791,9 +793,9 @@ function getStyles(theme: ReturnType<typeof useTheme>) {
       paddingVertical: 12,
       backgroundColor: theme.surface,
     },
-    negotiableToggleActive: { backgroundColor: "#0f766e", borderColor: "#0f766e" },
+    negotiableToggleActive: { backgroundColor: theme.primary, borderColor: theme.primary },
     negotiableText: { fontSize: 13, fontWeight: "700", color: theme.subtext },
-    negotiableTextActive: { color: "#fff" },
+    negotiableTextActive: { color: theme.primaryText },
 
     // Chips
     chipGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -871,8 +873,8 @@ function getStyles(theme: ReturnType<typeof useTheme>) {
       gap: 8,
       minHeight: 52,
       borderRadius: 20,
-      backgroundColor: "#0f766e",
+      backgroundColor: theme.primary,
     },
-    previewButtonText: { color: "#fff", fontSize: 15, fontWeight: "800" },
+    previewButtonText: { color: theme.primaryText, fontSize: 15, fontWeight: "800" },
   });
 }
