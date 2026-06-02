@@ -34,6 +34,10 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+        # 4b. Install EAS CLI (NEW STEP)
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
       # 5. Build a preview for Android (Creates the APK automatically)
       - name: Build Android Preview
         run: eas build --platform android --profile preview --local --non-interactive
