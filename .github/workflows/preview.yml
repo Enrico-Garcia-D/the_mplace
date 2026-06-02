@@ -16,11 +16,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js environment
+      # 2. Setup Node.js environment (UPDATED TO VERSION 20)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       # 3. Setup Expo CLI tools
@@ -35,10 +35,6 @@ jobs:
       # 4. Install your project's packages
       - name: Install dependencies
         run: npm install --legacy-peer-deps
-
-        # 4b. Install EAS CLI (NEW STEP)
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
 
       # 5. Build a preview for Android (Creates the APK automatically)
       - name: Build Android Preview
