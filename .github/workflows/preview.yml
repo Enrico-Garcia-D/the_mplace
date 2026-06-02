@@ -1,6 +1,5 @@
 name: Expo Mobile Build
 
-# Trigger: Run this every time you push code to the 'main' branch
 on:
   push:
     branches:
@@ -16,14 +15,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js environment (UPDATED TO VERSION 20)
+      # 2. Setup Node.js environment
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      # 3. Setup Expo CLI tools
+      # 3. Setup Expo and EAS CLI
       - name: Setup Expo
         uses: expo/expo-github-action@v8
         with:
@@ -32,10 +30,18 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
           packager: npm
 
-      # 4. Install your project's packages
+      # 4. Install dependencies (legacy-peer-deps to avoid version conflicts)
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      # 5. Build a preview for Android (Creates the APK automatically)
+      # 5. Build Android APK locally
       - name: Build Android Preview
-        run: eas build --platform android --profile preview --local --non-interactive
+        run: eas build --platform android --profile preview --local --non-interactive --output ./build/app.apk
+
+      # 6. Upload APK so you can download it from GitHub Actions
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-preview
+          path: ./build/app.apk
+          retention-days: 7
