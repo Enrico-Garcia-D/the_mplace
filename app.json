@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mplace",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "extra": {
       "eas": {
         "projectId": "6ea8ee4e-af75-43ae-aae5-ea3c839917b1"
@@ -26,7 +25,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.MPlace",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./app/google-services.json"
     },
     "web": {
       "output": "static",
