@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import { useTheme } from "../theme";
+import { useThemeMode } from "../theme";
 import {
   collection,
   query,
@@ -66,7 +66,7 @@ const SORT_OPTIONS = [
 type SortId = "newest" | "oldest" | "price_asc" | "price_desc" | "title_asc";
 
 export default function HomeTab() {
-  const theme = useTheme();
+  const { theme } = useThemeMode();
   const styles = useMemo(() => getStyles(theme), [theme]);
   const [search, setSearch] = useState("");
   const router = useRouter();
@@ -84,7 +84,7 @@ export default function HomeTab() {
   const unreadCount = useUnreadNotifications();
   const [sortBy, setSortBy] = useState<SortId>("newest");
   const [sortModalVisible, setSortModalVisible] = useState(false);
-  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const [slideAnim] = useState(() => new Animated.Value(SCREEN_HEIGHT));
 
   const openSortModal = () => {
     setSortModalVisible(true);
@@ -231,181 +231,190 @@ export default function HomeTab() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
+      <View style={styles.topPanel}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.locationButton}
+              onPress={() => setLocationOpen((prev) => !prev)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="location" size={14} color="#0f766e" />
+              <Text style={styles.location}>{selectedLocation}</Text>
+              <Ionicons
+                name={locationOpen ? "chevron-up" : "chevron-down"}
+                size={14}
+                color="#0f766e"
+              />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>The MarketPlace</Text>
+          </View>
+
           <TouchableOpacity
-            style={styles.locationButton}
-            onPress={() => setLocationOpen((prev) => !prev)}
+            style={styles.notifButton}
+            onPress={() => router.push("/notifications" as any)}
             activeOpacity={0.8}
           >
-            <Ionicons name="location" size={14} color="#0f766e" />
-            <Text style={styles.location}>{selectedLocation}</Text>
-            <Ionicons
-              name={locationOpen ? "chevron-up" : "chevron-down"}
-              size={14}
-              color="#0f766e"
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>The MarketPlace</Text>
-          {locationOpen && (
-            <View style={styles.locationMenu}>
-              <TouchableOpacity
-                style={styles.locationAction}
-                activeOpacity={0.8}
-                onPress={fetchCurrentLocation}
-              >
-                <Text style={styles.locationActionText}>
-                  {gpsLoading
-                    ? "Getting GPS location..."
-                    : "Use current GPS location"}
+            <Ionicons name="notifications-outline" size={24} color={theme.text} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </Text>
-              </TouchableOpacity>
-              <TextInput
-                style={styles.locationSearchInput}
-                placeholder="Search locations"
-                placeholderTextColor="#94a3b8"
-                value={locationSearch}
-                onChangeText={setLocationSearch}
-              />
-              {locationError ? (
-                <Text style={styles.locationError}>{locationError}</Text>
-              ) : null}
-              <ScrollView style={styles.locationList} nestedScrollEnabled>
-                {LOCATION_OPTIONS.filter((loc) =>
-                  loc.toLowerCase().includes(locationSearch.toLowerCase()),
-                ).map((loc) => (
-                  <TouchableOpacity
-                    key={loc}
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {locationOpen && (
+          <View style={styles.locationMenu}>
+            <TouchableOpacity
+              style={styles.locationAction}
+              activeOpacity={0.8}
+              onPress={fetchCurrentLocation}
+            >
+              <Text style={styles.locationActionText}>
+                {gpsLoading
+                  ? "Getting GPS location..."
+                  : "Use current GPS location"}
+              </Text>
+            </TouchableOpacity>
+            <TextInput
+              style={styles.locationSearchInput}
+              placeholder="Search locations"
+              placeholderTextColor="#94a3b8"
+              value={locationSearch}
+              onChangeText={setLocationSearch}
+            />
+            {locationError ? (
+              <Text style={styles.locationError}>{locationError}</Text>
+            ) : null}
+            <ScrollView style={styles.locationList} nestedScrollEnabled>
+              {LOCATION_OPTIONS.filter((loc) =>
+                loc.toLowerCase().includes(locationSearch.toLowerCase()),
+              ).map((loc) => (
+                <TouchableOpacity
+                  key={loc}
+                  style={[
+                    styles.locationOption,
+                    selectedLocation === loc && styles.locationOptionActive,
+                  ]}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setSelectedLocation(loc);
+                    setLocationOpen(false);
+                    setLocationSearch("");
+                  }}
+                >
+                  <Text
                     style={[
-                      styles.locationOption,
-                      selectedLocation === loc && styles.locationOptionActive,
+                      styles.locationOptionText,
+                      selectedLocation === loc &&
+                        styles.locationOptionTextActive,
                     ]}
+                  >
+                    {loc}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              {locationSearch.trim().length > 0 &&
+                !LOCATION_OPTIONS.some(
+                  (loc) =>
+                    loc.toLowerCase() === locationSearch.trim().toLowerCase(),
+                ) && (
+                  <TouchableOpacity
+                    style={styles.locationOption}
                     activeOpacity={0.8}
                     onPress={() => {
-                      setSelectedLocation(loc);
+                      setSelectedLocation(locationSearch.trim());
                       setLocationOpen(false);
                       setLocationSearch("");
                     }}
                   >
-                    <Text
-                      style={[
-                        styles.locationOptionText,
-                        selectedLocation === loc &&
-                          styles.locationOptionTextActive,
-                      ]}
-                    >
-                      {loc}
+                    <Text style={styles.locationOptionText}>
+                      Use {locationSearch.trim()}
                     </Text>
                   </TouchableOpacity>
-                ))}
-                {locationSearch.trim().length > 0 &&
-                  !LOCATION_OPTIONS.some(
-                    (loc) =>
-                      loc.toLowerCase() === locationSearch.trim().toLowerCase(),
-                  ) && (
-                    <TouchableOpacity
-                      style={styles.locationOption}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        setSelectedLocation(locationSearch.trim());
-                        setLocationOpen(false);
-                        setLocationSearch("");
-                      }}
-                    >
-                      <Text style={styles.locationOptionText}>
-                        Use "{locationSearch.trim()}"
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-              </ScrollView>
-            </View>
-          )}
-        </View>
+                )}
+            </ScrollView>
+          </View>
+        )}
 
-        <TouchableOpacity
-          style={styles.notifButton}
-          onPress={() => router.push("/notifications" as any)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="notifications-outline" size={24} color={theme.text} />
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
+        <View style={styles.searchRow}>
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={18} color={theme.secondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search listings..."
+              placeholderTextColor={theme.placeholder}
+              value={search}
+              onChangeText={setSearch}
+            />
 
-      {/* Search + Sort */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={theme.secondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search listings..."
-            placeholderTextColor={theme.placeholder}
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
-        <TouchableOpacity
-          style={[styles.sortButton, isSortActive && styles.sortButtonActive]}
-          onPress={openSortModal}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name="swap-vertical-outline"
-            size={18}
-            color={isSortActive ? "#fff" : theme.text}
-          />
-          {isSortActive && (
-            <Text style={styles.sortButtonText} numberOfLines={1}>
-              {
-                SORT_OPTIONS.find((s) => s.id === sortBy)
-                  ?.label.split(":")[0]
-                  .split(" ")[0]
-              }
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Categories */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoryScroll}
-        contentContainerStyle={styles.categoryContent}
-      >
-        {CATEGORIES.map((cat) => (
+            <TouchableOpacity
+              style={styles.visualButton}
+              onPress={() => router.push("/visual-search" as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="camera" size={18} color={theme.primary} />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
-            key={cat.id}
-            style={[
-              styles.categoryChip,
-              selectedCategory === cat.id && styles.categoryChipActive,
-            ]}
-            onPress={() => setSelectedCategory(cat.id)}
+            style={[styles.sortButton, isSortActive && styles.sortButtonActive]}
+            onPress={openSortModal}
             activeOpacity={0.8}
           >
             <Ionicons
-              name={cat.icon as any}
-              size={15}
-              color={selectedCategory === cat.id ? "#fff" : "#475569"}
+              name="swap-vertical-outline"
+              size={18}
+              color={isSortActive ? "#fff" : theme.text}
             />
-            <Text
-              style={[
-                styles.categoryLabel,
-                selectedCategory === cat.id && styles.categoryLabelActive,
-              ]}
-            >
-              {cat.label}
-            </Text>
+            {isSortActive && (
+              <Text style={styles.sortButtonText} numberOfLines={1}>
+                {
+                  SORT_OPTIONS.find((s) => s.id === sortBy)
+                    ?.label.split(":")[0]
+                    .split(" ")[0]
+                }
+              </Text>
+            )}
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryScroll}
+          contentContainerStyle={styles.categoryContent}
+        >
+          {CATEGORIES.map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.categoryChip,
+                selectedCategory === cat.id && styles.categoryChipActive,
+              ]}
+              onPress={() => setSelectedCategory(cat.id)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={cat.icon as any}
+                size={15}
+                color={selectedCategory === cat.id ? "#fff" : "#475569"}
+              />
+              <Text
+                style={[
+                  styles.categoryLabel,
+                  selectedCategory === cat.id && styles.categoryLabelActive,
+                ]}
+              >
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Listings */}
       {loading ? (
@@ -420,6 +429,7 @@ export default function HomeTab() {
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -482,7 +492,7 @@ export default function HomeTab() {
       <Modal
         visible={sortModalVisible}
         transparent
-        animationType="none"
+        animationType="fade"
         onRequestClose={closeSortModal}
       >
         <Pressable style={styles.modalOverlay} onPress={closeSortModal}>
@@ -545,44 +555,45 @@ export default function HomeTab() {
   );
 }
 
-const getStyles = (theme: ReturnType<typeof useTheme>) => {
-  const isDark = theme.background === "#020617";
-  const surfaceGlass = isDark
-    ? "rgba(15,23,42,0.72)"
-    : "rgba(255,255,255,0.78)";
-  const softGlass = isDark ? "rgba(15,23,42,0.54)" : "rgba(255,255,255,0.58)";
-  const glassBorder = isDark
-    ? "rgba(255,255,255,0.16)"
-    : "rgba(15,118,110,0.16)";
-  const glassShadow = isDark ? "rgba(0,0,0,0.24)" : "rgba(15,118,110,0.16)";
+const getStyles = (theme: any) => {
+  const isDark = theme.background === '#061224';
+  const glassBg = isDark ? "rgba(11,29,54,0.88)" : "rgba(255,255,255,0.82)";
+  const glassBorder = isDark ? "rgba(91,183,255,0.18)" : "rgba(203,213,225,0.92)";
+  const glassShadow = isDark ? "rgba(0,0,0,0.35)" : "rgba(7,26,51,0.10)";
 
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
+    container: { flex: 1, backgroundColor: "transparent" },
+    topPanel: {
+      paddingHorizontal: 10,
+      paddingTop: 44,
+      marginBottom: 6,
+    },
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
-      paddingHorizontal: 10,
-      paddingTop: 56,
-      marginBottom: 14,
+      paddingHorizontal: 0,
+      paddingTop: 0,
+      paddingBottom: 4,
+      marginBottom: 4,
     },
-    headerLeft: { gap: 10, flex: 1, position: "relative" },
+    headerLeft: { gap: 6, flex: 1, position: "relative" },
     locationButton: {
       alignSelf: "flex-start",
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      backgroundColor: surfaceGlass,
-      borderRadius: 20,
+      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.58)",
+      borderRadius: 24,
       paddingHorizontal: 14,
       paddingVertical: 10,
       borderWidth: 1,
       borderColor: glassBorder,
       shadowColor: glassShadow,
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.14,
-      shadowRadius: 20,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 2,
     },
     location: { fontSize: 15, color: theme.primary, fontWeight: "700" },
     locationMenu: {
@@ -590,24 +601,17 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => {
       top: 54,
       left: 0,
       width: 260,
-      borderRadius: 20,
-      backgroundColor: surfaceGlass,
+      borderRadius: 22,
+      backgroundColor: glassBg,
       borderWidth: 1,
       borderColor: glassBorder,
       overflow: "hidden",
       zIndex: 1000,
-      shadowColor: glassShadow,
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.16,
-      shadowRadius: 22,
-      elevation: 9,
     },
     locationAction: {
       paddingHorizontal: 16,
       paddingVertical: 16,
-      backgroundColor: softGlass,
-      borderBottomWidth: 1,
-      borderBottomColor: glassBorder,
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.44)",
     },
     locationActionText: {
       fontSize: 14,
@@ -615,13 +619,13 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => {
       fontWeight: "700",
     },
     locationSearchInput: {
-      backgroundColor: softGlass,
+      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.46)",
       paddingHorizontal: 14,
       paddingVertical: 12,
       color: theme.text,
       fontSize: 14,
       borderBottomWidth: 1,
-      borderBottomColor: glassBorder,
+      borderBottomColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(7,26,51,0.08)",
     },
     locationError: {
       color: theme.danger,
@@ -638,17 +642,17 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => {
     notifButton: {
       width: 46,
       height: 46,
-      borderRadius: 16,
-      backgroundColor: "rgba(255,255,255,0.06)",
+      borderRadius: 18,
+      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.58)",
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.12)",
+      borderColor: glassBorder,
       shadowColor: glassShadow,
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.12,
-      shadowRadius: 18,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.08,
+      shadowRadius: 14,
+      elevation: 2,
     },
     badge: {
       position: "absolute",
@@ -666,51 +670,69 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => {
     },
     badgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
     searchRow: {
-      paddingHorizontal: 10,
-      marginBottom: 16,
+      marginBottom: 6,
       flexDirection: "row",
-      gap: 10,
+      gap: 6,
       alignItems: "center",
     },
     searchBox: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "rgba(255,255,255,0.06)",
-      borderRadius: 20,
+      backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.55)",
+      borderRadius: 24,
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.14)",
-      paddingHorizontal: 16,
-      height: 52,
+      borderColor: glassBorder,
+      paddingHorizontal: 12,
+      height: 48,
       gap: 10,
       shadowColor: glassShadow,
-      shadowOffset: { width: 0, height: 8 },
+      shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.08,
-      shadowRadius: 18,
+      shadowRadius: 16,
       elevation: 2,
     },
     searchInput: { flex: 1, fontSize: 15, color: theme.text },
-    sortButton: {
-      height: 52,
-      borderRadius: 20,
+    visualButton: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.50)",
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.14)",
-      backgroundColor: "rgba(255,255,255,0.06)",
+      borderColor: glassBorder,
+    },
+
+    sortButton: {
+      height: 48,
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: glassBorder,
+      backgroundColor: glassBg,
       alignItems: "center",
       justifyContent: "center",
       flexDirection: "row",
       gap: 6,
       paddingHorizontal: 14,
     },
-    sortButtonActive: { backgroundColor: "#0f766e", borderColor: "#0f766e" },
+    sortButtonActive: { backgroundColor: theme.primary, borderColor: theme.primary },
     sortButtonText: {
       fontSize: 12,
       fontWeight: "700",
       color: "#fff",
       maxWidth: 60,
     },
-    categoryScroll: { flexGrow: 0, flexShrink: 0, marginBottom: 14 },
-    categoryContent: { paddingHorizontal: 10, alignItems: "center", gap: 10 },
+    categoryScroll: {
+      flexGrow: 0,
+      flexShrink: 0,
+    },
+    categoryContent: {
+      paddingHorizontal: 0,
+      paddingVertical: 4,
+      alignItems: "center",
+      gap: 6,
+    },
     categoryChip: {
       flexDirection: "row",
       alignItems: "center",
@@ -718,9 +740,9 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => {
       paddingHorizontal: 16,
       paddingVertical: 10,
       borderRadius: 999,
-      backgroundColor: "rgba(255,255,255,0.06)",
+      backgroundColor: glassBg,
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.12)",
+      borderColor: glassBorder,
     },
     categoryChipActive: {
       backgroundColor: theme.primary,
@@ -732,20 +754,20 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => {
     row: { justifyContent: "space-between", marginBottom: 10 },
     card: {
       width: "49%",
-      backgroundColor: "rgba(255,255,255,0.06)",
+      backgroundColor: theme.surface,
       borderRadius: 6,
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.10)",
-      shadowColor: "rgba(0,0,0,0.14)",
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.12,
-      shadowRadius: 20,
-      elevation: 5,
+      borderColor: theme.border,
+      shadowColor: glassShadow,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.06,
+      shadowRadius: 14,
+      elevation: 1,
       overflow: "hidden",
     },
     cardImage: {
       height: 130,
-      backgroundColor: "rgba(255,255,255,0.05)",
+      backgroundColor: theme.card,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -814,22 +836,22 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => {
       borderRadius: 20,
       marginBottom: 6,
     },
-    sortOptionActive: { backgroundColor: "#f0fdf9" },
+    sortOptionActive: { backgroundColor: isDark ? "rgba(91,183,255,0.14)" : "#f0fdf9" },
     sortOptionIcon: {
       width: 38,
       height: 38,
       borderRadius: 20,
-      backgroundColor: theme.border,
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : theme.card,
       alignItems: "center",
       justifyContent: "center",
     },
-    sortOptionIconActive: { backgroundColor: "#0f766e" },
+    sortOptionIconActive: { backgroundColor: theme.primary },
     sortOptionLabel: {
       flex: 1,
       fontSize: 15,
       fontWeight: "600",
       color: theme.text,
     },
-    sortOptionLabelActive: { color: "#0f766e", fontWeight: "700" },
+    sortOptionLabelActive: { color: theme.primary, fontWeight: "700" },
   });
 };

@@ -173,7 +173,7 @@ export default function ReviewsScreen() {
 
 const getStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
+    container: { flex: 1, backgroundColor: 'transparent' },
     loadingContainer: {
       flex: 1,
       alignItems: "center",

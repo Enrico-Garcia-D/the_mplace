@@ -16,6 +16,18 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+## Android Cleanup
+
+Use these from the project root `C:\Programming\repos\local_buynsell_app`:
+
+```bash
+npm run android:clean
+npm run android:rebuild
+npm run dev-client
+```
+
+If you see native build cache errors, close Android Studio and any running Expo/Gradle terminals first, then rerun the commands above.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

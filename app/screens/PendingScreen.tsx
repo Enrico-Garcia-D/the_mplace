@@ -82,7 +82,7 @@ const getStyles = (theme) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.background,
+      backgroundColor: 'transparent',
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 28,

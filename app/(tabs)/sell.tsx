@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   Modal,
   Animated,
-  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -21,9 +20,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { auth, db } from "../../services/firebase";
 import { collection, addDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import { compressAndConvertToBase64 } from "../../services/storage";
-import { useTheme } from "../theme";
+import { useThemeMode } from "../theme";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const DRAFT_KEY = "sell_draft";
 
 const CATEGORIES = ["Electronics", "Clothing", "Furniture", "Food", "Vehicles", "Others"];
@@ -61,8 +59,9 @@ const EMPTY_FORM: FormState = {
 // ── Verification Overlay ──────────────────────────────────────────────────────
 function VerificationOverlay({ status, theme, router }: { status: string, theme: any, router: any }) {
   const isPending = status === 'pending';
-  const isDark = theme.background === '#020617';
-  const overlayBg = isDark ? 'rgba(2,6,23,0.85)' : 'rgba(255,255,255,0.85)';
+  const isDark = theme.background === '#061224';
+  const overlayBg = isDark ? 'rgba(2,6,23,0.88)' : 'rgba(255,255,255,0.85)';
+  const glassBg = isDark ? "rgba(11,29,54,0.92)" : "rgba(255,255,255,0.82)";
   
   return (
     <View style={[StyleSheet.absoluteFill, { 
@@ -73,24 +72,24 @@ function VerificationOverlay({ status, theme, router }: { status: string, theme:
       padding: 24
     }]}>
       <View style={{ 
-        backgroundColor: theme.surface, 
+        backgroundColor: glassBg, 
         padding: 24, 
-        borderRadius: 20, 
+        borderRadius: 24, 
         width: '100%',
         alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
         borderWidth: 1,
-        borderColor: theme.primarySoft
+        borderColor: isDark ? "rgba(91,183,255,0.18)" : "rgba(203,213,225,0.92)",
+        shadowColor: '#071a33',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.10,
+        shadowRadius: 18,
+        elevation: 3,
       }}>
         <View style={{ 
           width: 64, 
           height: 64, 
           borderRadius: 32, 
-          backgroundColor: theme.primarySoft, 
+          backgroundColor: isDark ? "rgba(91,183,255,0.14)" : "rgba(15,118,110,0.12)", 
           alignItems: 'center', 
           justifyContent: 'center',
           marginBottom: 16 
@@ -130,18 +129,18 @@ function VerificationOverlay({ status, theme, router }: { status: string, theme:
 
 // ── Success Screen ────────────────────────────────────────────────────────────
 function SuccessScreen({ onDone, theme }: { onDone: () => void, theme: any }) {
-  const scaleAnim = React.useRef(new Animated.Value(0)).current;
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const [scaleAnim] = useState(() => new Animated.Value(0));
+  const [fadeAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.sequence([
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, bounciness: 12 }),
       Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, scaleAnim]);
 
   const successStyles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.primarySoft, alignItems: "center", justifyContent: "center", gap: 24, padding: 32 },
+    container: { flex: 1, backgroundColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center", gap: 24, padding: 32 },
     iconWrap: { marginBottom: 8 },
     title: { fontSize: 32, fontWeight: "900", color: theme.primary },
     subtitle: { fontSize: 16, color: theme.subtext, textAlign: "center", lineHeight: 24 },
@@ -185,7 +184,7 @@ function PreviewModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={{ flex: 1, backgroundColor: 'transparent' }}>
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Image */}
           <View style={{ width: "100%", height: 280, backgroundColor: theme.surface }}>
@@ -271,7 +270,7 @@ function PreviewModal({
         </ScrollView>
 
         {/* Post button */}
-        <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: theme.background }}>
+        <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: 'transparent' }}>
           <TouchableOpacity
             style={{ minHeight: 54, borderRadius: 12, backgroundColor: theme.primary, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: submitting ? 0.7 : 1 }}
             onPress={onConfirm}
@@ -295,7 +294,7 @@ function PreviewModal({
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function SellTab() {
-  const theme = useTheme();
+  const { theme } = useThemeMode();
   const styles = useMemo(() => getStyles(theme), [theme]);
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -363,7 +362,7 @@ export default function SellTab() {
       }
     };
     fetchListing();
-  }, [id]);
+  }, [id, router]);
 
   // Load draft on mount (only for new listings)
   useEffect(() => {
@@ -378,7 +377,7 @@ export default function SellTab() {
         { text: "Resume", onPress: () => setForm(draft) },
       ]);
     }).catch(() => {});
-  }, []);
+  }, [id]);
 
   const saveDraft = async () => {
     await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(form));
@@ -647,6 +646,9 @@ export default function SellTab() {
                     {gpsLoading ? "Getting GPS..." : "Use GPS location"}
                   </Text>
                 </TouchableOpacity>
+                {locationError ? (
+                  <Text style={styles.locationError}>{locationError}</Text>
+                ) : null}
                 <TextInput
                   style={styles.locationSearchInput}
                   placeholder="Search locations"
@@ -715,10 +717,22 @@ export default function SellTab() {
   );
 }
 
-function getStyles(theme: ReturnType<typeof useTheme>) {
+function getStyles(theme: any) {
+  const isDark = theme.background === '#061224';
+  const glassBg = isDark ? "rgba(11,29,54,0.90)" : "rgba(255,255,255,0.82)";
+  const glassBorder = isDark ? "rgba(91,183,255,0.18)" : "rgba(203,213,225,0.92)";
+
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
-    header: { paddingHorizontal: 16, paddingTop: 56, paddingBottom: 16, gap: 4 },
+    container: { flex: 1, backgroundColor: 'transparent' },
+    header: {
+      paddingHorizontal: 16,
+      paddingTop: 56,
+      paddingBottom: 16,
+      gap: 4,
+      backgroundColor: glassBg,
+      borderBottomWidth: 1,
+      borderBottomColor: glassBorder,
+    },
     headerTitle: { fontSize: 26, fontWeight: "800", color: theme.text },
     headerSubtitle: { fontSize: 14, color: theme.subtext },
 
@@ -726,12 +740,12 @@ function getStyles(theme: ReturnType<typeof useTheme>) {
     photoBox: {
       marginHorizontal: 8,
       height: 200,
-      borderRadius: 6,
+      borderRadius: 18,
       overflow: "hidden",
       borderWidth: 1,
       borderColor: theme.border,
       marginBottom: 20,
-      backgroundColor: theme.surface,
+      backgroundColor: glassBg,
     },
     photoPreview: { width: "100%", height: "100%", resizeMode: "cover" },
     photoActions: { position: "absolute", bottom: 10, right: 10, flexDirection: "row", gap: 8 },
@@ -751,7 +765,7 @@ function getStyles(theme: ReturnType<typeof useTheme>) {
       width: 60,
       height: 60,
       borderRadius: 30,
-      backgroundColor: theme.primarySoft,
+      backgroundColor: "rgba(15,118,110,0.12)",
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1.5,
@@ -835,16 +849,17 @@ function getStyles(theme: ReturnType<typeof useTheme>) {
       left: 0,
       right: 0,
       borderRadius: 12,
-      backgroundColor: theme.surface,
+      backgroundColor: glassBg,
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: glassBorder,
       overflow: "hidden",
       zIndex: 1000,
       elevation: 6,
     },
-    locationAction: { paddingHorizontal: 14, paddingVertical: 14, backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border },
+    locationAction: { paddingHorizontal: 14, paddingVertical: 14, backgroundColor: glassBg, borderBottomWidth: 1, borderBottomColor: glassBorder },
     locationActionText: { fontSize: 14, color: theme.primary, fontWeight: "700" },
-    locationSearchInput: { backgroundColor: theme.background, paddingHorizontal: 14, paddingVertical: 12, color: theme.text, fontSize: 14, borderBottomWidth: 1, borderBottomColor: theme.border },
+    locationError: { paddingHorizontal: 14, paddingVertical: 10, color: theme.danger, fontSize: 13 },
+    locationSearchInput: { backgroundColor: glassBg, paddingHorizontal: 14, paddingVertical: 12, color: theme.text, fontSize: 14, borderBottomWidth: 1, borderBottomColor: glassBorder },
     locationList: { maxHeight: 180 },
     locationItem: { paddingHorizontal: 14, paddingVertical: 12 },
     locationItemActive: { backgroundColor: theme.primary },

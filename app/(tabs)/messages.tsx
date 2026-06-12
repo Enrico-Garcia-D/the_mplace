@@ -15,35 +15,37 @@ import {
   subscribeToConversations,
   Conversation,
 } from "../../services/chatService";
-import { useTheme } from "../theme";
+import { useThemeMode } from "../theme";
 import { useAuthUid } from "../hooks/useAuthUid";
 
 // ── Components ────────────────────────────────────────────────────────────────
 
 function VerificationOverlay({ status, theme, router }: { status: string, theme: any, router: any }) {
   const isPending = status === 'pending';
+  const glassBg = theme.background === '#061224' ? "rgba(11,29,54,0.92)" : "rgba(255,255,255,0.80)";
+  const glassBorder = theme.background === '#061224' ? "rgba(91,183,255,0.18)" : "rgba(203,213,225,0.92)";
   
   return (
     <View style={[StyleSheet.absoluteFill, { 
-      backgroundColor: 'rgba(255,255,255,0.85)', 
+      backgroundColor: 'rgba(7,26,51,0.22)', 
       justifyContent: 'center', 
       alignItems: 'center',
       zIndex: 10,
       padding: 24
     }]}>
       <View style={{ 
-        backgroundColor: theme.surface, 
+        backgroundColor: glassBg, 
         padding: 24, 
-        borderRadius: 20, 
+        borderRadius: 24, 
         width: '100%',
         alignItems: 'center',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
         borderWidth: 1,
-        borderColor: theme.primarySoft
+        borderColor: glassBorder,
+        shadowColor: '#071a33',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.10,
+        shadowRadius: 18,
+        elevation: 3,
       }}>
         <View style={{ 
           width: 64, 
@@ -103,7 +105,7 @@ function formatTime(ts: Timestamp | null | undefined): string {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function MessagesTab() {
-  const theme = useTheme();
+  const { theme } = useThemeMode();
   const styles = useMemo(() => getStyles(theme), [theme]);
   const router = useRouter();
   const uid = useAuthUid();
@@ -151,7 +153,7 @@ export default function MessagesTab() {
       otherName: otherName ?? "",
     }).toString();
 
-    router.push(`/chat?${qs}` as any);
+    router.push(`/chat?${qs}`);
   };
 
   const getUnread = (convo: Conversation): number => {
@@ -242,20 +244,26 @@ export default function MessagesTab() {
   );
 }
 
-const getStyles = (theme: ReturnType<typeof useTheme>) =>
+const getStyles = (theme: any) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
+    container: { flex: 1, backgroundColor: 'transparent' },
     header: { paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16 },
     headerTitle: { fontSize: 26, fontWeight: "800", color: theme.text },
-    list: { paddingHorizontal: 4, paddingBottom: 100 },
+    list: { paddingHorizontal: 16, paddingBottom: 100 },
     convoItem: {
       flexDirection: "row",
       alignItems: "center",
       padding: 14,
       marginBottom: 6,
-      backgroundColor: theme.surface,
+      backgroundColor: theme.background === '#061224' ? "rgba(11,29,54,0.90)" : "rgba(255,255,255,0.60)",
       borderRadius: 6,
+      borderWidth: 1,
+      borderColor: theme.background === '#061224' ? "rgba(91,183,255,0.16)" : "rgba(255,255,255,0.76)",
       gap: 12,
+      shadowColor: "#071a33",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.08,
+      shadowRadius: 14,
     },
     convoAvatar: {
       width: 50,
@@ -320,7 +328,7 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     unreadConversation: {
       borderLeftWidth: 4,
-      borderLeftColor: theme.primary,
+      backgroundColor: theme.background === '#061224' ? "rgba(91,183,255,0.10)" : "rgba(15,118,110,0.10)",
     },
     avatarText: {
       fontSize: 18,

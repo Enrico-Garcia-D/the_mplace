@@ -21,11 +21,19 @@
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "monochromeImage": "./assets/images/android-icon-monochrome.png",
+        "splashIcon": {
+          "image": "./assets/images/TM-Logo.png",
+          "backgroundColor": "#F7FAFC",
+          "dark": {
+            "backgroundColor": "#0B1220"
+          }
+        }
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.MPlace",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./android/app/google-services.json"
+
     },
     "web": {
       "output": "static",
@@ -36,12 +44,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/images/TM-Logo.png",
+          "imageWidth": 240,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#F7FAFC",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#0B1220"
           }
         }
       ],

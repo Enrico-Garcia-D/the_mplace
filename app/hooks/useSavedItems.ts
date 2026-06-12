@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../../services/firebase";
 
 export function useSavedItems() {
@@ -7,20 +8,40 @@ export function useSavedItems() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
-      setLoading(false);
-      return;
-    }
+    let unsubscribeDoc: (() => void) | undefined;
 
-    const unsub = onSnapshot(doc(db, "users", uid), (snapshot) => {
-      if (snapshot.exists()) {
-        setSavedIds(snapshot.data().savedItems || []);
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      unsubscribeDoc?.();
+      unsubscribeDoc = undefined;
+      setSavedIds([]);
+
+      if (!currentUser) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      setLoading(true);
+      unsubscribeDoc = onSnapshot(
+        doc(db, "users", currentUser.uid),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            setSavedIds(snapshot.data().savedItems || []);
+          } else {
+            setSavedIds([]);
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Error loading saved items:", error);
+          setLoading(false);
+        },
+      );
     });
 
-    return () => unsub();
+    return () => {
+      unsubscribeDoc?.();
+      unsubscribeAuth();
+    };
   }, []);
 
   return { savedIds, loading };

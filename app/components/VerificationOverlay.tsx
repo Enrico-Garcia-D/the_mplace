@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface VerificationOverlayProps {
@@ -11,12 +11,11 @@ interface VerificationOverlayProps {
 
 export function VerificationOverlay({ status, theme, router, onClose }: VerificationOverlayProps) {
   const isPending = status === 'pending';
+  const isDark = theme.background === '#061224';
   
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: 24 }]}>
-      <View style={{ backgroundColor: theme.surface, padding: 24, borderRadius: 20, width: '100%', alignItems: 'center' }}>
-        
-        {/* DISMISS BUTTON */}
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(2,6,23,0.55)', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: 24 }]}>
+      <View style={{ backgroundColor: theme.surface, padding: 24, borderRadius: 20, width: '100%', alignItems: 'center', borderWidth: 0.5, borderColor: theme.border }}>
         <TouchableOpacity 
           onPress={onClose} 
           style={{ position: 'absolute', top: 15, right: 15 }}
@@ -24,7 +23,7 @@ export function VerificationOverlay({ status, theme, router, onClose }: Verifica
           <Ionicons name="close" size={24} color={theme.subtext} />
         </TouchableOpacity>
 
-        <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: theme.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+        <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: isDark ? 'rgba(91,183,255,0.14)' : theme.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
           <Ionicons name={isPending ? "hourglass-outline" : "alert-circle-outline" as any} size={32} color={theme.primary} />
         </View>
         
@@ -39,7 +38,7 @@ export function VerificationOverlay({ status, theme, router, onClose }: Verifica
         </Text>
 
         <TouchableOpacity 
-          style={{ backgroundColor: theme.primary, paddingVertical: 14, borderRadius: 12, width: '100%', alignItems: 'center' }}
+          style={{ backgroundColor: theme.primary, paddingVertical: 14, borderRadius: 12, width: '100%', alignItems: 'center', borderWidth: 0.5, borderColor: theme.primary }}
           onPress={() => isPending ? router.push('/profile') : router.push('/id-upload')}
         >
           <Text style={{ color: '#fff', fontWeight: '800' }}>

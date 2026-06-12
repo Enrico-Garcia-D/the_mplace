@@ -1,7 +1,7 @@
-import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../theme";
+import { Tabs } from "expo-router";
 import { useUnreadMessages } from "../hooks/useUnreadMessages";
+import { useTheme } from "../theme";
 
 export default function TabLayout() {
   const theme = useTheme();
@@ -11,6 +11,10 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        sceneStyle: { backgroundColor: 'transparent' },
+        lazy: true,
+        detachInactiveScreens: true,
+        freezeOnBlur: true,
         tabBarActiveTintColor: theme.tabBarActive,
         tabBarInactiveTintColor: theme.tabBarInactive,
         tabBarStyle: {
@@ -18,6 +22,8 @@ export default function TabLayout() {
           borderTopColor: theme.tabBarBorder,
           height: 60,
           paddingBottom: 8,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarLabelStyle: {
           fontSize: 11,

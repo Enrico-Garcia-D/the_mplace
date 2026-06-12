@@ -16,12 +16,12 @@ import { db, auth } from "../../services/firebase";
 import ImageViewing from "react-native-image-viewing";
 
 // Internal Imports
-import { useTheme } from "../theme";
+import { useThemeMode } from "../theme";
 import { VerificationOverlay } from "../components/VerificationOverlay";
 import { SaveButton } from "../components/SaveButton";
 
 export default function ListingDetail() {
-  const theme = useTheme();
+  const { theme } = useThemeMode();
   const styles = useMemo(() => getStyles(theme), [theme]);
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -217,7 +217,7 @@ export default function ListingDetail() {
 
           {listing.imageURL && (
             <View style={styles.expandHint}>
-              <Ionicons name="expand" size={16} color="#fff" />
+            <Ionicons name="expand" size={16} color={theme.primaryText} />
             </View>
           )}
         </View>
@@ -302,7 +302,7 @@ export default function ListingDetail() {
             style={styles.messageButton}
             onPress={handleEditListing}
           >
-            <Ionicons name="pencil" size={20} color="#fff" />
+            <Ionicons name="pencil" size={20} color={theme.primaryText} />
             <Text style={styles.messageButtonText}>Edit Listing</Text>
           </TouchableOpacity>
         ) : (
@@ -310,7 +310,7 @@ export default function ListingDetail() {
             style={styles.messageButton}
             onPress={handleMessageSeller}
           >
-            <Ionicons name="chatbubble-ellipses" size={20} color="#fff" />
+            <Ionicons name="chatbubble-ellipses" size={20} color={theme.primaryText} />
             <Text style={styles.messageButtonText}>Message Seller</Text>
           </TouchableOpacity>
         )}
@@ -319,9 +319,9 @@ export default function ListingDetail() {
   );
 }
 
-const getStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background },
-  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: theme.background },
+const getStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: "transparent" },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "transparent" },
   notFound: { fontSize: 16, color: theme.subtext },
   imageBox: { width: "100%", height: 300, backgroundColor: theme.card },
   image: { width: "100%", height: "100%", resizeMode: "cover" },
@@ -333,10 +333,11 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: theme.surface,
+    backgroundColor: theme.background === '#061224' ? "rgba(11,29,54,0.92)" : theme.surface,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 3,
+    borderWidth: 0.5,
+    borderColor: theme.border,
   },
   expandHint: {
     position: "absolute",
@@ -349,7 +350,7 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  content: { padding: 20, gap: 16, backgroundColor: theme.background },
+  content: { padding: 20, gap: 16, backgroundColor: "transparent" },
   titleRow: { gap: 6 },
   title: { fontSize: 22, fontWeight: "800", color: theme.text, lineHeight: 28 },
   price: { fontSize: 24, fontWeight: "800", color: theme.primary },
@@ -362,7 +363,7 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   sellerCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.surface,
+    backgroundColor: theme.background === '#061224' ? "rgba(11,29,54,0.90)" : theme.surface,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.border,
@@ -400,7 +401,7 @@ const getStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: theme.border,
-    backgroundColor: theme.background,
+    backgroundColor: theme.background === '#061224' ? "rgba(6,18,36,0.98)" : theme.background,
   },
   messageButton: {
     minHeight: 54,

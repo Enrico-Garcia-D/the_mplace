@@ -147,7 +147,7 @@ export default function MyListings() {
 
 const getStyles = (theme) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
+    container: { flex: 1, backgroundColor: 'transparent' },
     loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
     header: {
       flexDirection: "row",

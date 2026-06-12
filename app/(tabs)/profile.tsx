@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { signOut } from "../../services/auth";
 import { auth, db } from "../../services/firebase";
-import { useTheme } from "../theme";
+import { useThemeMode } from "../theme";
 import { SignOutConfirmation } from "../components/SignOutConfirmation";
 import {
   doc,
@@ -31,7 +31,7 @@ import { useSavedItems } from "../hooks/useSavedItems";
 import { useAuthUid } from "../hooks/useAuthUid";
 
 export default function ProfileTab() {
-  const theme = useTheme();
+  const { theme, mode } = useThemeMode();
   const styles = useMemo(() => getStyles(theme), [theme]);
   const router = useRouter();
   const uid = useAuthUid();
@@ -318,9 +318,16 @@ export default function ProfileTab() {
           )}
           <Ionicons name="chevron-forward" size={18} color={theme.secondary} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          activeOpacity={0.8}
+          onPress={() => router.push("/settings" as any)}
+        >
           <Ionicons name="settings" size={20} color={theme.primary} />
           <Text style={styles.menuLabel}>Settings</Text>
+          <Text style={styles.menuValue}>
+            {mode === 'automatic' ? 'Automatic' : mode === 'dark' ? 'Dark' : 'Light'}
+          </Text>
           <Ionicons name="chevron-forward" size={18} color={theme.secondary} />
         </TouchableOpacity>
       </View>
@@ -346,9 +353,13 @@ export default function ProfileTab() {
   );
 }
 
-const getStyles = (theme: ReturnType<typeof useTheme>) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
+const getStyles = (theme: any) =>
+  {
+    const glassBg = theme.background === '#061224' ? "rgba(11,29,54,0.90)" : "rgba(255,255,255,0.82)";
+    const glassBorder = theme.background === '#061224' ? "rgba(91,183,255,0.18)" : "rgba(203,213,225,0.92)";
+
+    return StyleSheet.create({
+    container: { flex: 1, backgroundColor: 'transparent' },
     loadingContainer: {
       flex: 1,
       alignItems: "center",
@@ -360,16 +371,15 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
       flexDirection: "row",
       alignItems: "center",
       marginHorizontal: 10,
-      backgroundColor: theme.surface,
-      borderRadius: 16,
+      backgroundColor: glassBg,
+      borderRadius: 22,
       padding: 16,
       borderWidth: 1,
-      borderColor: theme.primarySoft,
-      shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 4 },
+      borderColor: glassBorder,
+      shadowColor: "#071a33",
+      shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.08,
-      shadowRadius: 10,
-      elevation: 3,
+      shadowRadius: 16,
       gap: 14,
       marginBottom: 12,
     },
@@ -377,7 +387,7 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
       width: 100,
       height: 100,
       borderRadius: 50,
-      backgroundColor: theme.primarySoft,
+      backgroundColor: theme.background === '#061224' ? "rgba(91,183,255,0.14)" : theme.primarySoft,
       alignItems: "center",
       justifyContent: "center",
       overflow: "hidden",
@@ -408,10 +418,10 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
     statsRow: {
       flexDirection: "row",
       marginHorizontal: 10,
-      backgroundColor: theme.surface,
-      borderRadius: 12,
+      backgroundColor: glassBg,
+      borderRadius: 18,
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: glassBorder,
       padding: 16,
       marginBottom: 12,
     },
@@ -421,10 +431,10 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
     statDivider: { width: 1, backgroundColor: theme.border },
     reviewsCard: {
       marginHorizontal: 10,
-      backgroundColor: theme.surface,
-      borderRadius: 12,
+      backgroundColor: glassBg,
+      borderRadius: 18,
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: glassBorder,
       padding: 16,
       marginBottom: 12,
       gap: 12,
@@ -459,10 +469,10 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
     seeAllText: { fontSize: 13, fontWeight: "700", color: theme.primary },
     menu: {
       marginHorizontal: 10,
-      backgroundColor: theme.surface,
-      borderRadius: 12,
+      backgroundColor: glassBg,
+      borderRadius: 18,
       borderWidth: 1,
-      borderColor: theme.border,
+      borderColor: glassBorder,
       marginBottom: 12,
       overflow: "hidden",
     },
@@ -476,6 +486,7 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
       gap: 12,
     },
     menuLabel: { flex: 1, fontSize: 15, fontWeight: "600", color: theme.text },
+    menuValue: { fontSize: 12, fontWeight: "700", color: theme.secondary, marginRight: 6 },
     reviewsBadge: { fontSize: 13, color: theme.subtext, fontWeight: "600" },
     signOutButton: {
       flexDirection: "row",
@@ -486,7 +497,7 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
       padding: 16,
       borderRadius: 20,
       borderColor: theme.danger,
-      backgroundColor: theme.surface,
+      backgroundColor: glassBg,
       gap: 8,
     },
     signOutText: { fontSize: 15, fontWeight: "700", color: theme.danger },
@@ -524,4 +535,5 @@ const getStyles = (theme: ReturnType<typeof useTheme>) =>
       fontWeight: "700",
       textTransform: "uppercase",
     },
-  });
+    });
+  };

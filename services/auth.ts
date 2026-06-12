@@ -12,6 +12,10 @@ export const signInWithGoogle = async () => {
   try {
     await GoogleSignin.hasPlayServices();
 
+    if (GoogleSignin.hasPreviousSignIn()) {
+      await GoogleSignin.signOut();
+    }
+
     const userInfo = await GoogleSignin.signIn();
 
     if (userInfo.type !== 'success') {
@@ -47,7 +51,9 @@ export const signInWithGoogle = async () => {
 
     return { user, isNewUser: false };
   } catch (error) {
-    console.log('SIGN IN ERROR:', JSON.stringify(error));
+    if (__DEV__) {
+      console.log('SIGN IN ERROR:', JSON.stringify(error));
+    }
     throw error;
   }
 };
@@ -77,12 +83,16 @@ export const getGoogleSignInErrorMessage = (error: unknown) => {
 };
 
 export const signOut = async () => {
-  console.log('signOut(): starting sign-out');
+  if (__DEV__) {
+    console.log('signOut(): starting sign-out');
+  }
   let googleSignOutError: unknown;
 
   try {
     await GoogleSignin.signOut();
-    console.log('signOut(): Google sign-out succeeded');
+    if (__DEV__) {
+      console.log('signOut(): Google sign-out succeeded');
+    }
   } catch (error) {
     googleSignOutError = error;
     console.warn('signOut(): Google sign-out failed:', error);
@@ -90,7 +100,9 @@ export const signOut = async () => {
 
   try {
     await firebaseSignOut(auth);
-    console.log('signOut(): Firebase sign-out succeeded');
+    if (__DEV__) {
+      console.log('signOut(): Firebase sign-out succeeded');
+    }
   } catch (error) {
     console.error('signOut(): Firebase sign-out failed:', error);
     if (googleSignOutError) {

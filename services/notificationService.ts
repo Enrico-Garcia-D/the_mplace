@@ -7,6 +7,14 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from "fir
 
 let notificationsConfigured = false;
 
+export type NotificationPayload = {
+  recipientId: string;
+  type: string;
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+};
+
 export function configureNotifications() {
   if (notificationsConfigured) return;
   notificationsConfigured = true;
@@ -20,16 +28,17 @@ export function configureNotifications() {
     }),
   });
 
-  // Log that notifications are configured
-  console.log("[Notifications] Handler configured for platform:", Platform.OS);
+  if (__DEV__) {
+    console.log("[Notifications] Handler configured for platform:", Platform.OS);
+  }
 }
 
 export function addNotificationResponseHandler(
-  onResponse: (data: Record<string, any>) => void,
+  onResponse: (data: Record<string, unknown>) => void,
 ) {
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     onResponse(
-      (response.notification.request.content.data ?? {}) as Record<string, any>,
+      (response.notification.request.content.data ?? {}) as Record<string, unknown>,
     );
   });
 
@@ -46,22 +55,23 @@ async function ensureAndroidNotificationChannel() {
       vibrationPattern: [0, 250, 250, 250],
       lightColor: "#0f766e",
     });
-    console.log("[Notifications] Android notification channel created");
+    if (__DEV__) {
+      console.log("[Notifications] Android notification channel created");
+    }
   } catch (error) {
     console.error("[Notifications] Failed to set Android channel:", error);
   }
 }
 
 function getExpoProjectId() {
-  return (
-    Constants.easConfig?.projectId ??
-    Constants.expoConfig?.extra?.eas?.projectId
-  );
+  return Constants.easConfig?.projectId ?? Constants.expoConfig?.extra?.eas?.projectId;
 }
 
 export async function registerPushToken(uid: string): Promise<void> {
-  console.log("[Notifications] Starting push token registration for uid:", uid);
-  
+  if (__DEV__) {
+    console.log("[Notifications] Starting push token registration for uid:", uid);
+  }
+
   try {
     configureNotifications();
     await ensureAndroidNotificationChannel();
@@ -71,14 +81,20 @@ export async function registerPushToken(uid: string): Promise<void> {
       return;
     }
 
-    console.log("[Notifications] Physical device detected - requesting permissions");
+    if (__DEV__) {
+      console.log("[Notifications] Physical device detected - requesting permissions");
+    }
     const { status: existing } = await Notifications.getPermissionsAsync();
     let finalStatus = existing;
 
-    console.log("[Notifications] Current permission status:", existing);
+    if (__DEV__) {
+      console.log("[Notifications] Current permission status:", existing);
+    }
 
     if (existing !== "granted") {
-      console.log("[Notifications] Permissions not granted, requesting...");
+      if (__DEV__) {
+        console.log("[Notifications] Permissions not granted, requesting...");
+      }
       const { status } = await Notifications.requestPermissionsAsync({
         ios: {
           allowAlert: true,
@@ -87,7 +103,9 @@ export async function registerPushToken(uid: string): Promise<void> {
         },
       });
       finalStatus = status;
-      console.log("[Notifications] Permission request result:", finalStatus);
+      if (__DEV__) {
+        console.log("[Notifications] Permission request result:", finalStatus);
+      }
     }
 
     if (finalStatus !== "granted") {
@@ -101,21 +119,27 @@ export async function registerPushToken(uid: string): Promise<void> {
     }
 
     const projectId = getExpoProjectId();
-    console.log("[Notifications] Expo project ID:", projectId ? "configured" : "MISSING - using fallback");
+    if (__DEV__) {
+      console.log("[Notifications] Expo project ID:", projectId ? "configured" : "missing");
+    }
 
     if (!projectId) {
       console.warn(
-        "[Notifications] ⚠️ CRITICAL: Expo projectId is missing! Add extra.eas.projectId to app.json. Push notifications will not work reliably."
+        "[Notifications] WARNING: Expo projectId is missing. Add extra.eas.projectId to app.json so push notifications can work reliably.",
       );
     }
 
-    console.log("[Notifications] Requesting Expo push token...");
+    if (__DEV__) {
+      console.log("[Notifications] Requesting Expo push token...");
+    }
     const tokenData = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined
+      projectId ? { projectId } : undefined,
     );
     const pushToken = tokenData.data;
 
-    console.log("[Notifications] Successfully obtained push token:", pushToken.substring(0, 20) + "...");
+    if (__DEV__) {
+      console.log("[Notifications] Successfully obtained push token:", pushToken.substring(0, 20) + "...");
+    }
 
     await updateDoc(doc(db, "users", uid), {
       pushToken,
@@ -125,10 +149,11 @@ export async function registerPushToken(uid: string): Promise<void> {
       pushTokenUpdatedAt: serverTimestamp(),
     });
 
-    console.log("[Notifications] ✓ Push token registered successfully");
+    if (__DEV__) {
+      console.log("[Notifications] Push token registered successfully");
+    }
   } catch (err) {
-    console.error("[Notifications] ✗ Push token registration failed:", err);
-    // Still try to update the user doc with error status
+    console.error("[Notifications] Push token registration failed:", err);
     try {
       await updateDoc(doc(db, "users", uid), {
         pushNotificationsEnabled: false,
@@ -141,12 +166,23 @@ export async function registerPushToken(uid: string): Promise<void> {
   }
 }
 
-export async function triggerNotification({ recipientId, type, title, body, data = {} }: any) {
-  console.log(`[Notifications] Triggering ${type} notification for`, recipientId);
-  
+export async function triggerNotification({
+  recipientId,
+  type,
+  title,
+  body,
+  data = {},
+}: NotificationPayload) {
+    // Avoid logging recipient identifiers in production.
+    if (__DEV__) {
+      console.log(`[Notifications] Triggering ${type} notification`);
+    }
+
+
   try {
-    // A. Create In-App Notification (For the Bell Screen)
-    console.log("[Notifications] Writing in-app notification to Firebase...");
+    if (__DEV__) {
+      console.log("[Notifications] Writing in-app notification to Firebase...");
+    }
     await addDoc(collection(db, "notifications", recipientId, "items"), {
       type,
       title,
@@ -155,23 +191,37 @@ export async function triggerNotification({ recipientId, type, title, body, data
       read: false,
       createdAt: serverTimestamp(),
     });
-    console.log("[Notifications] ✓ In-app notification saved");
+    if (__DEV__) {
+      console.log("[Notifications] In-app notification saved");
+    }
   } catch (err) {
-    console.error("[Notifications] ✗ In-app notification write failed:", err);
-    // Don't return - still try to send push notification
+    console.error("[Notifications] In-app notification write failed:", err);
   }
 
   try {
-    console.log("[Notifications] Fetching push token for recipient...");
+    if (__DEV__) {
+      console.log("[Notifications] Fetching push token for recipient...");
+    }
     const userSnap = await getDoc(doc(db, "users", recipientId));
     const token = userSnap.data()?.expoPushToken ?? userSnap.data()?.pushToken;
 
     if (!token) {
-      console.warn("[Notifications] ⚠️ No push token found for recipient:", recipientId);
+      console.warn("[Notifications] No push token found for recipient:", recipientId);
       return;
     }
 
-    console.log("[Notifications] Found push token, sending to Expo API...");
+    if (__DEV__) {
+      console.log("[Notifications] Found push token, sending to Expo API...");
+    }
+    // Minimize sensitive data in push payload.
+    // Keep only what the client needs to navigate.
+    const minimizedData: Record<string, unknown> = {
+      type,
+      conversationId: (data as any)?.conversationId,
+      listingId: (data as any)?.listingId,
+      // Do NOT include messageText / senderName / IDs beyond what navigation requires.
+    };
+
     const response = await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -179,30 +229,33 @@ export async function triggerNotification({ recipientId, type, title, body, data
         to: token,
         title,
         body,
-        data: { ...data, type },
+        data: minimizedData,
         sound: "default",
         channelId: "default",
         priority: "high",
       }),
     });
 
+
     const result = await response.json();
     const pushError = Array.isArray(result?.data)
-      ? result.data.find((item: any) => item.status === "error")
+      ? result.data.find((item: { status?: string }) => item.status === "error")
       : result?.data?.status === "error"
         ? result.data
         : null;
 
     if (!response.ok || pushError) {
-      console.error("[Notifications] ✗ Expo push API error:", {
+      console.error("[Notifications] Expo push API error:", {
         status: response.status,
         error: pushError || result,
       });
     } else {
-      console.log("[Notifications] ✓ Push notification sent successfully");
+      if (__DEV__) {
+        console.log("[Notifications] Push notification sent successfully");
+      }
     }
   } catch (err) {
-    console.error("[Notifications] ✗ Push notification failed:", err);
+    console.error("[Notifications] Push notification failed:", err);
   }
 }
 
@@ -216,7 +269,17 @@ export async function notifyNewMessage({
   listingImage,
   listingPrice,
   otherUid,
-}: any) {
+}: {
+  recipientUid: string;
+  senderName: string;
+  messageText: string;
+  conversationId: string;
+  listingId?: string;
+  listingTitle?: string;
+  listingImage?: string;
+  listingPrice?: string | number;
+  otherUid?: string;
+}) {
   return triggerNotification({
     recipientId: recipientUid,
     type: "new_message",

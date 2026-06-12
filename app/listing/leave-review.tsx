@@ -145,17 +145,17 @@ export default function LeaveReviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc" },
+  container: { flex: 1, backgroundColor: "transparent" },
   content: { padding: 24, gap: 16 },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(13,36,69,0.82)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#21416f",
     marginBottom: 8,
   },
   title: { fontSize: 24, fontWeight: "800", color: "#111827" },
@@ -166,12 +166,12 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 14, fontWeight: "700", color: "#374151" },
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#21416f",
     borderRadius: 12,
     padding: 14,
     fontSize: 14,
-    color: "#111827",
-    backgroundColor: "#fff",
+    color: "#eff6ff",
+    backgroundColor: "rgba(16,41,77,0.82)",
     minHeight: 120,
   },
   button: {

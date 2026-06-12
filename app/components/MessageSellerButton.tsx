@@ -1,8 +1,5 @@
-// components/MessageSellerButton.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-
 import React, { useMemo, useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { auth } from '../../services/firebase';
 import { ChatListing } from '../../services/chatService';
@@ -12,7 +9,6 @@ interface Props {
   listing: ChatListing & { sellerUid: string; sellerName: string };
 }
 
-// Named export for direct import usage
 export function MessageSellerButton({ listing }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
@@ -36,7 +32,7 @@ export function MessageSellerButton({ listing }: Props) {
         otherName: listing.sellerName ?? '',
       }).toString();
 
-      router.push((`/chat?${qs}`) as any);
+      router.push(`/chat?${qs}`);
     } catch (err) {
       Alert.alert('Error', 'Could not open chat. Please try again.');
       console.error(err);
@@ -55,7 +51,7 @@ export function MessageSellerButton({ listing }: Props) {
       {loading ? (
         <ActivityIndicator size="small" color="#fff" />
       ) : (
-        <Text style={styles.btnText}>💬  Message Seller</Text>
+        <Text style={styles.btnText}>Message Seller</Text>
       )}
     </TouchableOpacity>
   );
@@ -63,7 +59,7 @@ export function MessageSellerButton({ listing }: Props) {
 
 export default MessageSellerButton;
 
-const getStyles = (theme) =>
+const getStyles = (theme: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     btn: {
       backgroundColor: theme.primary,
@@ -73,11 +69,16 @@ const getStyles = (theme) =>
       justifyContent: 'center',
       marginHorizontal: 20,
       marginBottom: 16,
-      shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 4,
+      borderWidth: 0.5,
+      borderColor: theme.primary,
+      ...(Platform.OS === 'ios'
+        ? {
+            shadowColor: theme.shadow,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.18,
+            shadowRadius: 8,
+          }
+        : {}),
     },
     btnText: { fontSize: 16, fontWeight: '700', color: theme.primaryText, letterSpacing: 0.2 },
   });

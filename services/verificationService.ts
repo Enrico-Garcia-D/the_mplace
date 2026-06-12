@@ -1,6 +1,3 @@
-import * as FileSystem from 'expo-file-system/legacy';
-import * as ImageManipulator from 'expo-image-manipulator';
-
 interface VerificationResult {
   verified: boolean;
   name: string;
@@ -20,23 +17,37 @@ interface VerificationResult {
  * 3. Update the API endpoint if needed
  */
 
-const VERIHUBS_API_KEY = process.env.EXPO_PUBLIC_VERIHUBS_API_KEY;
-const VERIHUBS_API_URL = 'https://api.verihubs.com/v1/identity/philsys';
+// IMPORTANT: Never call third-party identity providers directly from the client.
+// This app used EXPO_PUBLIC_VERIHUBS_API_KEY (client-side) which can leak.
+// The safe approach is to proxy verification through your own backend.
+// For now we fail closed (block verification) unless you wire a backend endpoint.
+
+// Intentionally unused on the client (backend holds Verihubs secret).
+// Keeping EXPO_PUBLIC_VERIHUBS_API_KEY out of the client request path avoids leaking it.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _VERIHUBS_API_KEY = process.env.EXPO_PUBLIC_VERIHUBS_API_KEY;
+
+const VERIHUBS_VERIFY_BACKEND_URL = process.env.EXPO_PUBLIC_VERIHUBS_VERIFY_BACKEND_URL;
+// const VERIHUBS_API_URL = 'https://api.verihubs.com/v1/identity/philsys';
 
 export const verifyIDWithVerihubs = async (
   frontImageUri: string,
   backImageUri: string
 ): Promise<VerificationResult> => {
   try {
-    // TODO: Remove this fallback once you have real API credentials
-    if (!VERIHUBS_API_KEY) {
-      console.warn('Verihubs API key not configured. Using mock verification.');
-      return mockVerification();
+    // Fail closed unless a backend proxy URL is configured.
+    // (A client-side API key would be exposed to every app user.)
+    if (!VERIHUBS_VERIFY_BACKEND_URL) {
+      return {
+        verified: false,
+        name: '',
+        dateOfBirth: '',
+        idType: '',
+        idNumber: '',
+        error: 'Verification unavailable (backend proxy not configured).',
+      };
     }
 
-    // Compress and convert images to base64
-    const frontBase64 = await compressImageToBase64(frontImageUri);
-    const backBase64 = await compressImageToBase64(backImageUri);
 
     // Prepare the request payload
     const formData = new FormData();
@@ -51,14 +62,17 @@ export const verifyIDWithVerihubs = async (
       name: 'id_back.jpg',
     } as any);
 
-    // Call Verihubs API
-    const response = await fetch(VERIHUBS_API_URL, {
+    // Call your backend proxy endpoint.
+    // Backend should perform the Verihubs request securely using a server-side secret.
+    const response = await fetch(VERIHUBS_VERIFY_BACKEND_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${VERIHUBS_API_KEY}`,
+        // Content-Type is set automatically for FormData by fetch in React Native.
+        Accept: 'application/json',
       },
       body: formData,
     });
+
 
     if (!response.ok) {
       throw new Error(`Verihubs API error: ${response.statusText}`);
@@ -104,50 +118,26 @@ export const verifyIDWithVerihubs = async (
  * Mock verification for development/testing
  * Replace with real API calls once credentials are configured
  */
+// Removed mock verification to avoid accidentally shipping a bypass.
+// If you need a dev-only bypass, implement it server-side behind auth/feature-flag.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockVerification = (): VerificationResult => {
   return {
-    verified: true,
-    name: 'John Doe',
-    dateOfBirth: '1990-01-15',
-    idType: 'PhilSys ID',
-    idNumber: 'PS-2022-123456',
-    expiryDate: '2032-01-15',
+    verified: false,
+    name: '',
+    dateOfBirth: '',
+    idType: '',
+    idNumber: '',
+    error: 'Mock verification disabled for security.',
   };
 };
 
-/**
- * Compress image and convert to base64
- */
-const compressImageToBase64 = async (imageUri: string): Promise<string> => {
-  try {
-    const compressed = await ImageManipulator.manipulateAsync(
-      imageUri,
-      [{ resize: { width: 1200 } }],
-      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-    );
-
-    const base64 = await FileSystem.readAsStringAsync(compressed.uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    return base64;
-  } catch (error) {
-    console.error('Error compressing image:', error);
-    throw error;
-  }
-};
 
 /**
  * Extract QR code data from ID image (optional utility)
  * This can be used if you implement barcode scanning
  */
-export const extractQRCodeData = async (imageUri: string): Promise<string | null> => {
-  try {
-    // TODO: Implement QR code extraction using expo-barcode-scanner or similar
-    // For now, this is a placeholder
-    return null;
-  } catch (error) {
-    console.error('Error extracting QR code:', error);
-    return null;
-  }
+export const extractQRCodeData = async (_imageUri: string): Promise<string | null> => {
+  // TODO: Implement QR code extraction using expo-barcode-scanner or similar.
+  return null;
 };

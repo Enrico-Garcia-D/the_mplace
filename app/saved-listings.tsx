@@ -89,18 +89,18 @@ export default function SavedListings() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc" },
+  container: { flex: 1, backgroundColor: "transparent" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   header: { 
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingTop: 60, paddingBottom: 16, paddingHorizontal: 16, backgroundColor: "#fff" 
+    paddingTop: 60, paddingBottom: 16, paddingHorizontal: 16, backgroundColor: "rgba(13,36,69,0.72)" 
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
   card: { 
-    flexDirection: "row", alignItems: "center", backgroundColor: "#fff", 
-    padding: 12, borderRadius: 12, marginBottom: 10,
-    borderWidth: 1, borderColor: "#e2e8f0"
+    flexDirection: "row", alignItems: "center", backgroundColor: "rgba(16,41,77,0.82)", 
+    padding: 12, borderRadius: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: "#21416f"
   },
   image: { width: 60, height: 60, borderRadius: 8 },
   info: { flex: 1, marginLeft: 12 },
